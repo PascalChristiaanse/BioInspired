@@ -1,6 +1,7 @@
 """
 Setup script for the BioInspired project.
 This script helps you get started with the database infrastructure.
+Requires the tudat-space conda environment to be installed.
 """
 
 import subprocess
@@ -36,37 +37,44 @@ def check_docker_compose():
     return run_command("docker-compose --version", "Checking Docker Compose")
 
 
-def create_virtual_environment():
-    """Create a virtual environment."""
-    venv_path = os.path.join(os.getcwd(), "venv")
-    if os.path.exists(venv_path):
-        print("[OK] Virtual environment already exists, skipping creation")
-        return True
-    return run_command("python -m venv venv", "Creating virtual environment")
+def check_conda_environment():
+    """Check if the tudat-space conda environment exists."""
+    print("[INFO] Checking for tudat-space conda environment...")
+    try:
+        result = subprocess.run(
+            "conda env list", shell=True, check=True, capture_output=True, text=True
+        )
+        if "tudat-space" in result.stdout:
+            print("[OK] tudat-space conda environment found!")
+            return True
+        else:
+            print("[ERROR] tudat-space conda environment not found!")
+            print("Please create the tudat-space conda environment first.")
+            print("You can install it following the TudatPy installation guide:")
+            print("https://docs.tudat.space/en/stable/_src_getting_started/_src_installation.html")
+            return False
+    except subprocess.CalledProcessError as e:
+        print(f"[ERROR] Error checking conda environments: {e}")
+        print("Please make sure conda is installed and available in your PATH.")
+        return False
 
 
-def get_venv_python():
-    """Get the path to the Python executable in the virtual environment."""
-    if os.name == "nt":  # Windows
-        return os.path.join("venv", "Scripts", "python.exe")
-    else:  # Unix/Linux/Mac
-        return os.path.join("venv", "bin", "python")
+def get_conda_python():
+    """Get the command to run Python in the tudat-space conda environment."""
+    return "conda run -n tudat-space python"
 
 
-def get_venv_pip():
-    """Get the path to the pip executable in the virtual environment."""
-    if os.name == "nt":  # Windows
-        return os.path.join("venv", "Scripts", "pip.exe")
-    else:  # Unix/Linux/Mac
-        return os.path.join("venv", "bin", "pip")
+def get_conda_pip():
+    """Get the command to run pip in the tudat-space conda environment."""
+    return "conda run -n tudat-space pip"
 
 
 def setup_python_environment():
-    """Install Python dependencies in virtual environment."""
-    pip_path = get_venv_pip()
+    """Install Python dependencies in tudat-space conda environment."""
+    pip_command = get_conda_pip()
     return run_command(
-        f'"{pip_path}" install -r requirements.txt',
-        "Installing Python dependencies in venv",
+        f'{pip_command} install -r requirements.txt',
+        "Installing Python dependencies in tudat-space environment",
     )
 
 
@@ -77,8 +85,8 @@ def start_database():
 
 def initialize_database():
     """Initialize the database tables."""
-    python_path = get_venv_python()
-    return run_command(f'"{python_path}" init_db.py', "Initializing database tables")
+    python_command = get_conda_python()
+    return run_command(f'{python_command} init_db.py', "Initializing database tables")
 
 
 def main():
@@ -98,7 +106,7 @@ def main():
         return False
     # Setup steps
     steps = [
-        (create_virtual_environment, "Creating virtual environment"),
+        (check_conda_environment, "Checking tudat-space conda environment"),
         (setup_python_environment, "Setting up Python environment"),
         (start_database, "Starting PostgreSQL database"),
         (initialize_database, "Initializing database"),
@@ -111,17 +119,17 @@ def main():
             return False
     print("\n[OK] Setup completed successfully!")
     print("\nNext steps:")
-    print("1. Activate the virtual environment:")
-    if os.name == "nt":  # Windows
-        print("   .\\venv\\Scripts\\Activate.ps1")
-    else:  # Unix/Linux/Mac
-        print("   source venv/bin/activate")
+    print("1. Activate the tudat-space conda environment:")
+    print("   conda activate tudat-space")
     print("2. Check that the database is running: docker-compose ps")
     print("3. Start developing your evolutionary algorithms!")
     print("4. Use the DatabaseManager class to store and retrieve your data")
     print("\nTo run scripts in the future, use:")
-    python_path = get_venv_python()
-    print(f'   "{python_path}" your_script.py')
+    python_command = get_conda_python()
+    print(f'   {python_command} your_script.py')
+    print("   or activate the environment first:")
+    print("   conda activate tudat-space")
+    print("   python your_script.py")
 
     return True
 
