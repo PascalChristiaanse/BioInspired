@@ -192,3 +192,39 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Database files
+*.db
+*.sqlite3
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Large data files
+data/trajectories/*.npz
+data/trajectories/*.npy
+data/trajectories/*.hdf5
+data/trajectories/*.h5
+
+# Logs
+*.log
+logs/
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+docker-compose.override.yml
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Virtual environment
+venv/
+.venv/

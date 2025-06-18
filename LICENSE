@@ -1,21 +1,36 @@
-MIT License
+Custom Non-Commercial, No-Derivative License with Attribution
 
 Copyright (c) 2025 PascalChristiaanse
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy 
+of this software and associated files (the "Software"), to view, modify, and 
+use the Software for non-commercial purposes, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. ATTRIBUTION: All copies or substantial portions of the Software must retain 
+   this license notice and the following attribution:
+   
+   Original author: PascalChristiaanse
+   Project: BioInspired Evolutionary Docking System
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+2. NON-COMMERCIAL USE ONLY: The Software may not be used for commercial purposes, 
+   directly or indirectly. This includes, but is not limited to, selling, 
+   renting, licensing, or offering services for a fee that incorporate the Software.
+
+3. NO DERIVATIVE WORKS: The Software may be modified for your own personal use 
+   but may not be incorporated into other programs, redistributed as part of 
+   other software, or used as a component in derivative works.
+
+4. MODIFICATION ALLOWED: You may modify the Software for your own use, including 
+   bug fixes, improvements, or adaptations, provided you do not distribute or 
+   incorporate these modifications into other programs.
+
+5. REDISTRIBUTION: Redistribution of the original Software is permitted provided 
+   that all conditions of this license are met and the Software is not modified.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 SOFTWARE.
