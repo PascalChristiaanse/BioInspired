@@ -7,3 +7,5 @@ bioinspired package. It contains:
     - The Lander 2 spacecraft from the movie Interstellar."""
     
 from .simple_craft import SimpleCraft
+
+__all__ = ["SimpleCraft"]
