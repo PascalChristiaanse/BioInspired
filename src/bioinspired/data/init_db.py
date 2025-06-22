@@ -4,13 +4,8 @@ Run this script to create the database tables.
 """
 
 import sys
-import os
 
-# Add the src directory to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
-
-from bioinspired.data.database import create_tables, engine
-from bioinspired.data.models import Base
+from .database import create_tables, engine
 
 def init_database():
     """Initialize the database with all tables."""

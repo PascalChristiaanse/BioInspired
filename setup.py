@@ -86,7 +86,7 @@ def start_database():
 def initialize_database():
     """Initialize the database tables."""
     python_command = get_conda_python()
-    return run_command(f'{python_command} init_db.py', "Initializing database tables")
+    return run_command(f'{python_command} -m src.bioinspired.data.init_db', "Initializing database tables")
 
 
 def main():
