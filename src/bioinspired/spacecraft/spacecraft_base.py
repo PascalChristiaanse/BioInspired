@@ -102,7 +102,7 @@ class SpacecraftBase(ABC):
         raise NotImplementedError("This method should be implemented by subclasses.")
 
     def _get_termination(self):
-        """Return the termination condition for the simulation"""
+        """Return the termination condition for the spacecraft"""
         termination_conditions = []
         for termination in self._termination_settings:
             if not isinstance(termination, dict):

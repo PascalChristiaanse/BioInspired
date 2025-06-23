@@ -23,13 +23,7 @@ class SimpleCraft(SpacecraftBase):
         self._mass = 1000.0  # Spacecraft mass [kg]
 
     def _get_acceleration_settings(self):
-        print("Simplecraft get_acceleration")
         return super()._get_acceleration_settings()
-
-    def _get_termination(self):
-        """Return the termination settings for the spacecraft."""
-        # Create a termination condition for the simulation
-        return propagator.time_termination(self._simulation._end_epoch)
 
     def _get_propagator(self) -> propagator.PropagatorSettings:
         """Return the propagator settings for the spacecraft."""

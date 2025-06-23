@@ -108,24 +108,24 @@ class SimulatorBase(ABC):
             value = termination.get("value")
             if (
                 condition_type
-                == propagator.PropagationDependentVariableTerminationSettings
+                == "propagator.PropagationDependentVariableTerminationSettings"
             ):
                 # Create a dependent variable termination condition
                 termination_settings = (
-                    propagator.PropagationDependentVariableTerminationSettings(
+                    propagator.dependent_variable_termination(
                         condition, value
                     )
                 )
                 self._termination_list.append(termination_settings)
-            elif condition_type == propagator.PropagationTimeTerminationSettings:
+            elif condition_type == "propagator.PropagationTimeTerminationSettings":
                 # Create a time termination condition
-                termination_settings = propagator.PropagationTimeTerminationSettings(
+                termination_settings = propagator.time_termination(
                     value
                 )
                 self._termination_list.append(termination_settings)
-            elif condition_type == propagator.PropagationCPUTimeTerminationSettings:
+            elif condition_type == "propagator.PropagationCPUTimeTerminationSettings":
                 # Create a CPU time termination condition
-                termination_settings = propagator.PropagationCPUTimeTerminationSettings(
+                termination_settings = propagator.cpu_time_termination(
                     value
                 )
                 self._termination_list.append(termination_settings)
@@ -180,7 +180,21 @@ class SimulatorBase(ABC):
         """Run the simulation"""
         self._start_epoch = start_epoch
         self._end_epoch = start_epoch + simulation_time
+        self.add_termination_condition(
+            {
+                "type": "propagator.PropagationTimeTerminationSettings",
+                "condition": None,
+                "value": self._end_epoch,
+            }
+        )
         # Create simulation object and propagate dynamics.
+        print(
+            f"Running simulation from {self._start_epoch} to {self._end_epoch} seconds."
+        )
+        print("Termination conditions:", self.dump_termination_conditions())
+        
+        
         return create_dynamics_simulator(
-            self._get_body_model(), self._get_propagators()
+            self._get_body_model(), 
+            self._get_propagators()
         )
