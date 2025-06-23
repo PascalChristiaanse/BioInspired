@@ -3,6 +3,7 @@ Database connection and session management.
 """
 
 import os
+from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
@@ -35,6 +36,7 @@ def get_session():
         raise
 
 
+@contextmanager
 def get_session_context():
     """Get a database session as a context manager."""
     session = SessionLocal()
