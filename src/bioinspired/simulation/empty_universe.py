@@ -4,6 +4,7 @@ It is used to create a simulation environment with no gravitational bodies, but 
 """
 
 import numpy as np
+import json
 from overrides import override
 
 from tudatpy.interface import spice
@@ -45,6 +46,11 @@ class EmptyUniverseSimulator(SimulatorBase):
                 coefficient_set=integrator.CoefficientSets.rk_4,
             )
         return self._integrator
+
+    @override
+    def _dump_integrator_settings(self) -> str:
+        """Dump the integrator settings to a string representation in a JSON format."""
+        return json.dumps({"step_size": 10.0, "type": "RK4"})
 
     @override
     def _get_body_model(self) -> SystemOfBodies:

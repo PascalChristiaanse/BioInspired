@@ -4,6 +4,7 @@ It provides an interface for spacecraft designs and configurations such that eac
 spacecraft design can be used in the same way.
 """
 
+import json
 import numpy as np
 from abc import ABC, abstractmethod
 
@@ -29,10 +30,11 @@ class SpacecraftBase(ABC):
     def __init__(self, name: str, simulation: SimulatorBase, initial_state: np.ndarray):
         """Initialize the spacecraft with a name."""
         self.name = name
+        self._acceleration_settings = None
         self._acceleration_model = None
+        self._termination_settings: list[dict] = []
 
         self._simulation = simulation
-        self._acceleration_settings = None
         self._insert_into_body_model()
         self._simulation._propagator_list.append(
             self._get_propagator
@@ -51,7 +53,7 @@ class SpacecraftBase(ABC):
                 "Initial state must be a 6-element array representing position and velocity."
             )
 
-    def _get_acceleration_model(self):
+    def _get_acceleration_model(self) -> dict[str, dict[str, list[acceleration.AccelerationSettings]]]:
         """Convert the acceleration settings into an acceleration model."""
         # Create the acceleration model for the spacecraft.
         self._acceleration_model = create_acceleration_models(
@@ -61,9 +63,13 @@ class SpacecraftBase(ABC):
             self._simulation._get_central_body(),
         )
         return self._acceleration_model
+    
+    def _dump_acceleration_settings(self) -> str:
+        """Dump the acceleration settings to a string representation in a JSON format."""
+        return json.dumps(self._get_acceleration_settings())
 
     @abstractmethod
-    def _get_acceleration_settings(self) -> acceleration.AccelerationSettings:
+    def _get_acceleration_settings(self) -> dict[str, dict[str, list[acceleration.AccelerationSettings]]]:
         """Compiles the acceleration model for point mass gravity from all bodies on the spacecraft."""
 
         acceleration_dict = {}
@@ -95,7 +101,86 @@ class SpacecraftBase(ABC):
         """Return the propagator settings object."""
         raise NotImplementedError("This method should be implemented by subclasses.")
 
-    @abstractmethod
-    def _get_termination(self) -> propagator.PropagationTerminationSettings:
-        """Return the termination conditions for the spacecraft."""
-        raise NotImplementedError("This method should be implemented by subclasses.")
+    def _get_termination(self):
+        """Return the termination condition for the simulation"""
+        termination_conditions = []
+        for termination in self._termination_settings:
+            if not isinstance(termination, dict):
+                raise ValueError(
+                    "Custom termination conditions must be dictionaries with the format: "
+                    "{'type': 'propagator.PropagationTerminationSettings', 'condition': <condition>, 'value': <value>}"
+                )
+            # Unpack the termination condition
+            condition_type = termination.get("type")
+            condition = termination.get("condition")
+            value = termination.get("value")
+            if (
+                condition_type
+                == propagator.PropagationDependentVariableTerminationSettings
+            ):
+                # Create a dependent variable termination condition
+                termination_settings = (
+                    propagator.PropagationDependentVariableTerminationSettings(
+                        condition, value
+                    )
+                )
+                termination_conditions.append(termination_settings)
+            elif condition_type == propagator.PropagationTimeTerminationSettings:
+                # Create a time termination condition
+                termination_settings = propagator.PropagationTimeTerminationSettings(
+                    value
+                )
+                termination_conditions.append(termination_settings)
+            elif condition_type == propagator.PropagationCPUTimeTerminationSettings:
+                # Create a CPU time termination condition
+                termination_settings = propagator.PropagationCPUTimeTerminationSettings(
+                    value
+                )
+                termination_conditions.append(termination_settings)
+            else:
+                raise ValueError(
+                    f"Unknown termination condition type: {condition_type}. "
+                    "Supported types are: 'propagator.PropagationDependentVariableTerminationSettings', "
+                    "'propagator.PropagationTimeTerminationSettings', "
+                    "'propagator.PropagationCPUTimeTerminationSettings'."
+                )
+        termination_settings = propagator.hybrid_termination(
+            termination_conditions, fulfill_single_condition=True
+        )
+        return termination_settings
+
+    def add_termination_condition(self, termination_condition: dict):
+        """Add a termination condition to the simulation. Must be a dictionary with the format:
+        {
+            "type": "propagator.PropagationTerminationSettings",
+            "condition": <condition>,
+            "value": <value>
+        }
+
+        where <condition> is a string representing the condition type and <value> is the value for that condition.
+        This method allows for custom termination conditions to be added to the simulation, while still being able to add them
+        to the database as a JSON string.
+        """
+        if not isinstance(termination_condition, dict):
+            raise ValueError(
+                "Termination condition must be a dictionary with the format: "
+                "{'type': 'propagator.PropagationTerminationSettings', 'condition': <condition>, 'value': <value>}"
+            )
+        # Validate the termination condition type
+        if termination_condition["type"] not in [
+            "propagator.PropagationDependentVariableTerminationSettings",
+            "propagator.PropagationTimeTerminationSettings",
+            "propagator.PropagationCPUTimeTerminationSettings",
+        ]:
+            raise ValueError(
+                "Invalid termination condition type. Supported types are: "
+                "'propagator.PropagationDependentVariableTerminationSettings', "
+                "'propagator.PropagationTimeTerminationSettings', "
+                "'propagator.PropagationCPUTimeTerminationSettings'."
+            )
+        self._termination_settings.append(termination_condition)
+
+    def dump_termination_settings(self) -> str:
+        """Dump the termination settings to a string representation in a JSON format."""
+        import json
+        return json.dumps(self._termination_settings)
