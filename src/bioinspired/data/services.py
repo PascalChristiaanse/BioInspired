@@ -13,9 +13,18 @@ from sqlalchemy.orm import Session
 
 from .database import get_session, get_session_context
 from .models import Simulation, Spacecraft, Trajectory
-from bioinspired.simulation.simulation_base import SimulatorBase
-from bioinspired.spacecraft.spacecraft_base import SpacecraftBase
 
+# try:
+#     from bioinspired.simulation.simulation_base import SimulatorBase
+#     from bioinspired.spacecraft.spacecraft_base import SpacecraftBase
+# except ImportError as e:
+#     from src.bioinspired.simulation.simulation_base import SimulatorBase
+#     from src.bioinspired.spacecraft.spacecraft_base import SpacecraftBase
+# except Exception as e:
+#     raise ImportError(
+#         "Ensure the 'bioinspired' package is installed and accessible. "
+#         f"Error: {e}"
+#     )
 
 def serialize_numpy_array(arr: np.ndarray) -> List[float]:
     """Convert numpy array to JSON-serializable list."""
@@ -93,7 +102,7 @@ def deserialize_numpy_array(
 
 
 def save_simulation(
-    simulation: SimulatorBase,
+    simulation,
     simulation_type: str,
     session: Optional[Session] = None,
 ) -> Simulation:
@@ -165,7 +174,7 @@ def save_simulation(
 
 
 def save_spacecraft(
-    spacecraft: SpacecraftBase, simulation_id: int, session: Optional[Session] = None
+    spacecraft, simulation_id: int, session: Optional[Session] = None
 ) -> Spacecraft:
     """
     Save a spacecraft configuration to the database.
@@ -241,7 +250,7 @@ def save_spacecraft(
 
 def save_trajectory(
     simulation_id: int,
-    dynamics_simulator: Optional[SimulatorBase] = None,
+    dynamics_simulator = None,
     trajectory_metadata: Optional[Dict[str, Any]] = None,
     session: Optional[Session] = None,
 ) -> Trajectory:
@@ -460,7 +469,7 @@ def get_spacecraft_by_simulation(
             return _get_craft(session)
 
 
-def get_simulation_dump_data(simulation: SimulatorBase) -> Dict[str, Any]:
+def get_simulation_dump_data(simulation) -> Dict[str, Any]:
     """
     Get comprehensive dump data from a simulation using the new dump methods.
 
@@ -495,7 +504,7 @@ def get_simulation_dump_data(simulation: SimulatorBase) -> Dict[str, Any]:
     return dump_data
 
 
-def get_spacecraft_dump_data(spacecraft: SpacecraftBase) -> Dict[str, Any]:
+def get_spacecraft_dump_data(spacecraft) -> Dict[str, Any]:
     """
     Get comprehensive dump data from a spacecraft using the new dump methods.
 

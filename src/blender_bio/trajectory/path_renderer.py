@@ -1,60 +1,109 @@
 """
-Trajectory path rendering and visualization.
+Trajectory path rendering and visualization for the BioInspired project.
+This module connects to the project's database to fetch trajectory data
+and renders it within Blender.
 """
 
-import numpy as np
-from typing import List, Dict, Any, Optional, Tuple
 import sys
 import os
+import numpy as np
+import json
+from pathlib import Path
+from typing import List, Tuple, Optional
 
-# Add the main project to path for importing bioinspired
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
+# Add project paths to Blender's Python environment
+script_dir = Path(__file__).parent
+project_root = script_dir.parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 try:
     import bpy
-    import bmesh
-    from mathutils import Vector, Color
-    BLENDER_AVAILABLE = True
-except ImportError:
-    BLENDER_AVAILABLE = False
+    from src.bioinspired.data.services import get_trajectory
+    from src.bioinspired.data.models import Trajectory
+except ImportError as e:
+    raise ImportError(
+        "This script must be run within Blender's Python environment, "
+        f"and the 'bioinspired' package must be accessible. Error: {e}"
+    )
 
 
 class TrajectoryRenderer:
-    """Renders molecular docking trajectories in Blender."""
-    
-    def __init__(self, scene_manager=None):
-        """Initialize trajectory renderer."""
-        if not BLENDER_AVAILABLE:
-            raise ImportError("Blender Python API not available")
-        
+    """Renders simulation trajectories in Blender."""
+
+    def __init__(self, scene_manager=None, scale_factor: float = 1.0 / 1000000.0):
+        """
+        Initialize trajectory renderer.
+
+        Args:
+            scene_manager: The scene manager for handling Blender scene operations.
+            scale_factor: Factor to scale down simulation coordinates (e.g., 1e-3 for m to km).
+        """
         self.scene_manager = scene_manager
+        self.scale_factor = scale_factor
         self.trajectory_objects = []
+
+    def load_trajectory_from_database(self, trajectory_id: int) -> Tuple[Optional[np.ndarray], Optional[Trajectory]]:
+        """
+        Load trajectory data from the database using the new services.
         
-    def load_trajectory_from_database(self, trajectory_id: int):
-        """Load trajectory data from the database."""
+        Args:
+            trajectory_id: The database ID of the trajectory to load.
+            
+        Returns:
+            A tuple containing:
+            - A numpy array of shape (N, 3) with trajectory coordinates.
+            - The SQLAlchemy Trajectory object.
+            Returns (None, None) if loading fails.
+        """
+        print(f"Loading trajectory with ID: {trajectory_id}")
         try:
-            from bioinspired.data import DatabaseManager
-            db = DatabaseManager()
-            trajectory_obj, trajectory_data = db.load_trajectory_data(trajectory_id)
-            return trajectory_data, trajectory_obj
-        except ImportError:
-            raise ImportError("Cannot import bioinspired package. Make sure it's in the Python path.")
-    
-    def render_trajectory_path(self, trajectory_data: np.ndarray, 
+            trajectory_record = get_trajectory(trajectory_id)
+            if not trajectory_record:
+                print(f"Error: Trajectory with ID {trajectory_id} not found.")
+                return None, None
+
+            # The dynamics_simulator field is expected to be a dict/JSON
+            sim_data = trajectory_record.dynamics_simulator
+            if isinstance(sim_data[0], str):
+                sim_data = json.loads(sim_data[0])
+
+            if not sim_data or 'state_history' not in sim_data:
+                print(f"Error: No state history found in trajectory {trajectory_id}.")
+                return None, None
+
+            state_history = sim_data['state_history']
+            
+            # Sort state history by time (keys are strings of floats)
+            # and extract position (first 3 elements of each state vector)
+            sorted_times = sorted(state_history.keys(), key=float)
+            trajectory_points = np.array([state_history[t][:3] for t in sorted_times])
+            
+            print(f"Successfully loaded {len(trajectory_points)} points for trajectory {trajectory_id}.")
+            return trajectory_points, trajectory_record
+            
+        except Exception as e:
+            print(f"An unexpected error occurred while loading trajectory {trajectory_id}: {e}")
+            import traceback
+            traceback.print_exc()
+            return None, None
+
+    def render_trajectory_path(self, trajectory_data: np.ndarray,
                              name: str = "trajectory",
                              path_width: float = 0.05,
                              color: Tuple[float, float, float, float] = (0.2, 0.8, 0.3, 1.0)):
         """Render a trajectory as a 3D path."""
         
+        # Scale trajectory data
+        trajectory_data = trajectory_data * self.scale_factor
+        
         # Create curve from trajectory data
         curve_data = bpy.data.curves.new(f"{name}_curve", type='CURVE')
         curve_data.dimensions = '3D'
-        curve_data.resolution_u = 12
+        curve_data.resolution_u = 2 # Lower resolution for performance
         
         # Create spline
-        polyline = curve_data.splines.new('NURBS')
+        polyline = curve_data.splines.new('POLY') # POLY is better for raw data
         polyline.points.add(len(trajectory_data) - 1)
         
         # Add points
@@ -71,42 +120,46 @@ class TrajectoryRenderer:
         bpy.context.scene.collection.objects.link(curve_obj)
         
         # Create and assign material
-        material = self.create_trajectory_material(f"{name}_material", color)
+        material = self.create_material(f"{name}_material", color)
         curve_obj.data.materials.append(material)
         
         self.trajectory_objects.append(curve_obj)
         return curve_obj
-    
+
     def render_trajectory_spheres(self, trajectory_data: np.ndarray,
                                 name: str = "trajectory_spheres",
                                 sphere_size: float = 0.1,
                                 color: Tuple[float, float, float, float] = (0.8, 0.2, 0.2, 1.0),
-                                subsample: int = 5):
+                                subsample: int = 1):
         """Render trajectory points as spheres."""
         
-        # Subsample trajectory for performance
+        # Scale and subsample trajectory for performance
+        trajectory_data = trajectory_data * self.scale_factor
         points = trajectory_data[::subsample]
         
         # Create material
-        material = self.create_trajectory_material(f"{name}_material", color)
+        material = self.create_material(f"{name}_material", color)
         
         sphere_objects = []
         for i, point in enumerate(points):
             # Create sphere
             bpy.ops.mesh.primitive_uv_sphere_add(
                 radius=sphere_size,
-                location=(point[0], point[1], point[2])
+                location=(point[0], point[1], point[2]),
+                segments=16, # Lower resolution for performance
+                ring_count=8
             )
             sphere = bpy.context.object
             sphere.name = f"{name}_sphere_{i}"
             
-            # Assign material
+            # Assign material and smooth shading
             sphere.data.materials.append(material)
+            bpy.ops.object.shade_smooth()
             sphere_objects.append(sphere)
         
         self.trajectory_objects.extend(sphere_objects)
         return sphere_objects
-    
+
     def render_start_end_markers(self, trajectory_data: np.ndarray,
                                 name: str = "markers",
                                 start_color: Tuple[float, float, float, float] = (0.0, 1.0, 0.0, 1.0),
@@ -114,6 +167,12 @@ class TrajectoryRenderer:
                                 marker_size: float = 0.3):
         """Add start and end markers to trajectory."""
         
+        if len(trajectory_data) == 0:
+            return None, None
+
+        # Scale trajectory data
+        trajectory_data = trajectory_data * self.scale_factor
+
         start_point = trajectory_data[0]
         end_point = trajectory_data[-1]
         
@@ -125,7 +184,7 @@ class TrajectoryRenderer:
         start_marker = bpy.context.object
         start_marker.name = f"{name}_start"
         
-        start_material = self.create_trajectory_material(f"{name}_start_material", start_color)
+        start_material = self.create_material(f"{name}_start_material", start_color)
         start_marker.data.materials.append(start_material)
         
         # End marker (red cube)
@@ -136,32 +195,28 @@ class TrajectoryRenderer:
         end_marker = bpy.context.object
         end_marker.name = f"{name}_end"
         
-        end_material = self.create_trajectory_material(f"{name}_end_material", end_color)
+        end_material = self.create_material(f"{name}_end_material", end_color)
         end_marker.data.materials.append(end_material)
         
         self.trajectory_objects.extend([start_marker, end_marker])
         return start_marker, end_marker
-    
-    def create_trajectory_material(self, name: str, 
-                                 color: Tuple[float, float, float, float],
-                                 metallic: float = 0.0,
-                                 roughness: float = 0.4) -> bpy.types.Material:
+
+    def create_material(self, name: str,
+                      color: Tuple[float, float, float, float],
+                      metallic: float = 0.1,
+                      roughness: float = 0.5) -> bpy.types.Material:
         """Create a material for trajectory visualization."""
         
-        # Create material
         material = bpy.data.materials.new(name=name)
         material.use_nodes = True
-        
-        # Get principled BSDF node
-        bsdf = material.node_tree.nodes["Principled BSDF"]
-        
-        # Set properties
-        bsdf.inputs[0].default_value = color  # Base Color
-        bsdf.inputs[6].default_value = metallic  # Metallic
-        bsdf.inputs[9].default_value = roughness  # Roughness
+        bsdf = material.node_tree.nodes.get("Principled BSDF")
+        if bsdf:
+            bsdf.inputs['Base Color'].default_value = color
+            bsdf.inputs['Metallic'].default_value = metallic
+            bsdf.inputs['Roughness'].default_value = roughness
         
         return material
-    
+
     def render_multiple_trajectories(self, trajectories: List[np.ndarray],
                                    names: Optional[List[str]] = None,
                                    colors: Optional[List[Tuple[float, float, float, float]]] = None):
@@ -171,7 +226,6 @@ class TrajectoryRenderer:
             names = [f"trajectory_{i}" for i in range(len(trajectories))]
         
         if colors is None:
-            # Generate distinct colors
             colors = self.generate_distinct_colors(len(trajectories))
         
         rendered_objects = []
@@ -180,32 +234,20 @@ class TrajectoryRenderer:
             rendered_objects.append(obj)
         
         return rendered_objects
-    
+
     def generate_distinct_colors(self, num_colors: int) -> List[Tuple[float, float, float, float]]:
         """Generate visually distinct colors for multiple trajectories."""
+        import colorsys
         colors = []
         for i in range(num_colors):
             hue = i / num_colors
-            # Convert HSV to RGB (simplified)
-            if hue < 1/6:
-                rgb = (1, 6*hue, 0)
-            elif hue < 2/6:
-                rgb = (2-6*hue, 1, 0)
-            elif hue < 3/6:
-                rgb = (0, 1, 6*hue-2)
-            elif hue < 4/6:
-                rgb = (0, 4-6*hue, 1)
-            elif hue < 5/6:
-                rgb = (6*hue-4, 0, 1)
-            else:
-                rgb = (1, 0, 6-6*hue)
-            
+            rgb = colorsys.hsv_to_rgb(hue, 0.8, 0.9)
             colors.append((*rgb, 1.0))
-        
         return colors
-    
+
     def clear_trajectory_objects(self):
         """Remove all trajectory objects from the scene."""
         for obj in self.trajectory_objects:
-            bpy.data.objects.remove(obj, do_unlink=True)
+            if obj and obj.name in bpy.data.objects:
+                bpy.data.objects.remove(obj, do_unlink=True)
         self.trajectory_objects.clear()

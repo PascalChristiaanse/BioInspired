@@ -17,7 +17,7 @@ from .core import BlenderScene, MaterialManager
 from .trajectory import TrajectoryRenderer, AnimationManager
 from .spacecraft import SpacecraftRenderer, DockingPortRenderer
 from .environments import SpaceEnvironmentRenderer
-from .exporters import VideoExporter, ImageExporter
+# from .exporters import VideoExporter, ImageExporter
 
 __all__ = [
     "BlenderScene",
@@ -27,8 +27,8 @@ __all__ = [
     "SpacecraftRenderer",
     "DockingPortRenderer", 
     "SpaceEnvironmentRenderer",
-    "VideoExporter",
-    "ImageExporter",
+    # "VideoExporter",
+    # "ImageExporter",
     "__version__"
 ]
 
