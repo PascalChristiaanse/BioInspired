@@ -4,15 +4,18 @@ This module provides high-level functions to save and retrieve
 simulation and spacecraft data from the PostgreSQL database.
 """
 
-import numpy as np
 import json
-import pickle
-from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any, Union
+from datetime import datetime
+from typing import Optional, List, Dict, Any
+
+import numpy as np
+from sqlalchemy import cast
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session
 
-from .database import get_session, get_session_context
+from .database import get_session_context
 from .models import Simulation, Spacecraft, Trajectory
+
 
 # try:
 #     from bioinspired.simulation.simulation_base import SimulatorBase
@@ -108,15 +111,15 @@ def save_simulation(
 ) -> Simulation:
     """
     Save a simulation configuration to the database.
+    If an identical simulation already exists, return that one.
 
     Args:
         simulation: The simulator instance
         simulation_type: Type of simulation (e.g., 'EmptyUniverseSimulator')
-
         session: Optional database session (will create one if not provided)
 
     Returns:
-        The created Simulation database record
+        The created or existing Simulation database record
     """
 
     def _save_sim(session: Session) -> Simulation:
@@ -146,13 +149,37 @@ def save_simulation(
             # Fallback if dump method fails
             termination_settings = {}
 
+        integrator_type = (
+            type(simulation._integrator).__name__
+            if hasattr(simulation, "_integrator") and simulation._integrator
+            else None
+        )
+
+        # Check for existing simulation
+        existing_sim = (
+            session.query(Simulation)
+            .filter(
+                Simulation.simulation_type == simulation_type,
+                Simulation.global_frame_origin == simulation.global_frame_origin,
+                Simulation.global_frame_orientation
+                == simulation.global_frame_orientation,
+                Simulation.integrator_type == integrator_type,
+                cast(Simulation.integrator_settings, JSONB) == integrator_settings,
+                cast(Simulation.body_model_settings, JSONB) == body_model_settings,
+                cast(Simulation.termination_settings, JSONB) == termination_settings,
+            )
+            .first()
+        )
+
+        if existing_sim:
+            session.expunge(existing_sim)
+            return existing_sim
+
         sim_record = Simulation(
             simulation_type=simulation_type,
             global_frame_origin=simulation.global_frame_origin,
             global_frame_orientation=simulation.global_frame_orientation,
-            integrator_type=type(simulation._integrator).__name__
-            if hasattr(simulation, "_integrator") and simulation._integrator
-            else None,
+            integrator_type=integrator_type,
             integrator_settings=integrator_settings,
             body_model_settings=body_model_settings,
             termination_settings=termination_settings,
@@ -178,6 +205,7 @@ def save_spacecraft(
 ) -> Spacecraft:
     """
     Save a spacecraft configuration to the database.
+    If an identical spacecraft for the same simulation exists, return that one.
 
     Args:
         spacecraft: The spacecraft instance
@@ -185,7 +213,7 @@ def save_spacecraft(
         session: Optional database session (will create one if not provided)
 
     Returns:
-        The created Spacecraft database record
+        The created or existing Spacecraft database record
     """
 
     def _save_craft(session: Session) -> Spacecraft:
@@ -194,7 +222,9 @@ def save_spacecraft(
 
         # Use new dump methods for better serialization
         try:
-            acceleration_settings = json.loads(spacecraft._dump_acceleration_settings())
+            acceleration_settings = json.loads(
+                spacecraft._dump_acceleration_settings()
+            )
         except (AttributeError, json.JSONDecodeError):
             # Fallback to old method if dump method fails
             acceleration_settings = {}
@@ -222,10 +252,33 @@ def save_spacecraft(
             "description": "Propagator configuration",
         }
 
+        name = spacecraft.get_name()
+        spacecraft_type = type(spacecraft).__name__
+
+        # Check for existing spacecraft
+        existing_craft = (
+            session.query(Spacecraft)
+            .filter(
+                Spacecraft.simulation_id == simulation_id,
+                Spacecraft.name == name,
+                Spacecraft.spacecraft_type == spacecraft_type,
+                cast(Spacecraft.initial_state, JSONB) == initial_state_data,
+                cast(Spacecraft.acceleration_settings, JSONB)
+                == acceleration_settings,
+                cast(Spacecraft.propagator_settings, JSONB) == propagator_settings,
+                cast(Spacecraft.termination_settings, JSONB) == termination_settings,
+            )
+            .first()
+        )
+
+        if existing_craft:
+            session.expunge(existing_craft)
+            return existing_craft
+
         craft_record = Spacecraft(
             simulation_id=simulation_id,
-            name=spacecraft.get_name(),
-            spacecraft_type=type(spacecraft).__name__,
+            name=name,
+            spacecraft_type=spacecraft_type,
             initial_state=initial_state_data,
             acceleration_settings=acceleration_settings,
             propagator_settings=propagator_settings,
@@ -250,7 +303,8 @@ def save_spacecraft(
 
 def save_trajectory(
     simulation_id: int,
-    dynamics_simulator = None,
+    spacecraft_id: int,
+    dynamics_simulator=None,
     trajectory_metadata: Optional[Dict[str, Any]] = None,
     session: Optional[Session] = None,
 ) -> Trajectory:
@@ -258,6 +312,7 @@ def save_trajectory(
     Create a new trajectory record for tracking simulation execution.
 
     :param simulation_id: ID of the associated simulation
+    :param spacecraft_id: ID of the associated spacecraft
     :param dynamics_simulator: dynamics simulator object to serialize
     :param data_size: Optional size of the trajectory data (number of steps)
     :param start_time: Optional start time of the trajectory
@@ -272,18 +327,19 @@ def save_trajectory(
         # Serialize dynamics simulator if provided
         if dynamics_simulator is not None:
             dynamics_simulator_dict = serialize_dynamics_simulator(dynamics_simulator)
-            termination_reason_index = dynamics_simulator_dict["termination_details"][
+            termination_reason = dynamics_simulator_dict["termination_details"][
                 "termination_reason"
             ]
-            termination_reasons = [
-                "propagation_never_run",
-                "unknown_reason",
-                "termination_condition_reached",
-                "runtime_error_caught_in_propagation",
-                "nan_or_inf_detected_in_state",
-            ]
+            if isinstance(termination_reason, str) and termination_reason.startswith(
+                "PropagationTerminationReason."
+            ):
+                termination_reason = termination_reason.replace(
+                    "PropagationTerminationReason.", ""
+                )
+
             trajectory_record = Trajectory(
                 simulation_id=simulation_id,
+                spacecraft_id=spacecraft_id,
                 dynamics_simulator=json.dumps(
                     serialize_dynamics_simulator(dynamics_simulator)
                 ),
@@ -296,12 +352,13 @@ def save_trajectory(
                     "total_number_of_function_evaluations"
                 ],
                 total_cpu_time=dynamics_simulator_dict["total_computation_time"],
-                termination_reason=termination_reasons[termination_reason_index],
+                termination_reason=termination_reason,
                 initial_state=(dynamics_simulator_dict["state_history"]["0.0"]),
             )
         else:
             trajectory_record = Trajectory(
                 simulation_id=simulation_id,
+                spacecraft_id=spacecraft_id,
                 data_size=None,
                 dynamics_simulator=None,
                 trajectory_metadata=trajectory_metadata or {},
@@ -371,32 +428,23 @@ def update_trajectory_status(
             termination_reason = dynamics_simulator_dict["termination_details"][
                 "termination_reason"
             ]
-            termination_reasons = [
-                "propagation_never_run",
-                "unknown_reason",
-                "termination_condition_reached",
-                "runtime_error_caught_in_propagation",
-                "nan_or_inf_detected_in_state",
-            ]
 
-            trajectory_record.start_time = (
-                dynamics_simulator_dict["initial_and_final_times"][0],
+            trajectory_record.start_time = dynamics_simulator_dict[
+                "initial_and_final_times"
+            ][0]
+            trajectory_record.end_time = dynamics_simulator_dict[
+                "initial_and_final_times"
+            ][1]
+            trajectory_record.dynamics_simulator = json.dumps(
+                serialize_dynamics_simulator(dynamics_simulator)
             )
-            trajectory_record.end_time = (
-                dynamics_simulator_dict["initial_and_final_times"][1],
-            )
-            trajectory_record.dynamics_simulator = (
-                json.dumps(serialize_dynamics_simulator(dynamics_simulator)),
-            )
-            trajectory_record.data_size = (
-                len(dynamics_simulator_dict["state_history"]),
-            )
+            trajectory_record.data_size = len(dynamics_simulator_dict["state_history"])
             trajectory_record.number_of_function_evaluations = (
-                dynamics_simulator_dict["total_number_of_function_evaluations"],
+                dynamics_simulator_dict["total_number_of_function_evaluations"]
             )
-            trajectory_record.total_cpu_time = (
-                dynamics_simulator_dict["total_computation_time"],
-            )
+            trajectory_record.total_cpu_time = dynamics_simulator_dict[
+                "total_computation_time"
+            ]
             trajectory_record.initial_state = dynamics_simulator_dict["state_history"][
                 "0.0"
             ]
@@ -409,7 +457,7 @@ def update_trajectory_status(
                 )
             else:
                 termination_reason_clean = termination_reason
-            trajectory_record.termination_reason = (termination_reason_clean,)
+            trajectory_record.termination_reason = termination_reason_clean
 
         session.commit()
         session.refresh(trajectory_record)
@@ -569,6 +617,29 @@ def get_trajectories_by_simulation(
         trajectory_list = (
             session.query(Trajectory)
             .filter(Trajectory.simulation_id == simulation_id)
+            .all()
+        )
+        # Detach all objects from the session so they can be used after the session closes
+        for trajectory in trajectory_list:
+            session.expunge(trajectory)
+        return trajectory_list
+
+    if session:
+        return _get_trajectories(session)
+    else:
+        with get_session_context() as session:
+            return _get_trajectories(session)
+
+
+def get_trajectories_by_spacecraft(
+    spacecraft_id: int, session: Optional[Session] = None
+) -> List[Trajectory]:
+    """Get all trajectories for a spacecraft."""
+
+    def _get_trajectories(session: Session) -> List[Trajectory]:
+        trajectory_list = (
+            session.query(Trajectory)
+            .filter(Trajectory.spacecraft_id == spacecraft_id)
             .all()
         )
         # Detach all objects from the session so they can be used after the session closes

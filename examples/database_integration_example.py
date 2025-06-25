@@ -19,6 +19,7 @@ from bioinspired.data import (
     get_spacecraft_by_simulation,
     get_trajectories_by_simulation,
     get_simulation_status,
+    get_trajectories_by_spacecraft,
 )
 
 
@@ -69,6 +70,7 @@ def main():
     print("\n5. Creating trajectory with dynamics simulator...")
     trajectory_record = save_trajectory(
         simulation_id=sim_record.id,
+        spacecraft_id=craft_record.id,
         trajectory_metadata={
             "description": "Spacecraft trajectory in empty universe",
         },
@@ -186,6 +188,14 @@ def main():
             print(f"    Started: {traj.started_at}")
         if traj.completed_at is not None:
             print(f"    Completed: {traj.completed_at}")
+
+    # Show trajectories by spacecraft
+    spacecraft_trajectories = get_trajectories_by_spacecraft(craft_record.id)
+    print(
+        f"\n[OK] Found {len(spacecraft_trajectories)} trajectories for spacecraft {craft_record.id}"
+    )
+    for traj in spacecraft_trajectories:
+        print(f"  - Trajectory {traj.id}: {traj.status}")
 
     print("\n" + "=" * 60)
     print("Database integration example completed successfully!")

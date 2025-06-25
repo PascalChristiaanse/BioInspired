@@ -10,12 +10,10 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
-    JSON,
-    LargeBinary,
 )
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from typing import Optional, Any
 from datetime import datetime
 import zoneinfo
 
@@ -81,6 +79,7 @@ class Trajectory(Base):
 
     # For direct simulation tracking
     simulation_id = Column(Integer, ForeignKey("simulations.id"), nullable=False)
+    spacecraft_id = Column(Integer, ForeignKey("spacecraft.id"), nullable=False)
 
     # Trajectory/Result data details
     data_size = Column(Integer)  # Number of data points/trajectory steps
@@ -110,9 +109,10 @@ class Trajectory(Base):
     # Relationships
     # individual = relationship("Individual", back_populates="trajectories")  # Uncomment when evolutionary features are enabled
     simulation = relationship("Simulation", back_populates="trajectories")
+    spacecraft = relationship("Spacecraft", back_populates="trajectories")
 
     def __repr__(self):
-        return f"<Trajectory(id={self.id}, simulation_id={self.simulation_id}, status='{self.status}', type='{self.result_type}', size={self.data_size})>"
+        return f"<Trajectory(id={self.id}, simulation_id={self.simulation_id}, spacecraft_id={self.spacecraft_id}, status='{self.status}', size={self.data_size})>"
 
 
 # class Annotation(Base):
@@ -187,6 +187,7 @@ class Spacecraft(Base):
 
     # Relationships
     simulation = relationship("Simulation", back_populates="spacecraft")
+    trajectories = relationship("Trajectory", back_populates="spacecraft")
 
     def __repr__(self):
         return f"<Spacecraft(id={self.id}, name='{self.name}', type='{self.spacecraft_type}')>"

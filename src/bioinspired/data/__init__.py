@@ -17,6 +17,7 @@ from .services import (
     get_spacecraft_by_simulation,
     get_trajectory,
     get_trajectories_by_simulation,
+    get_trajectories_by_spacecraft,
     get_simulation_status,
 )
 
@@ -39,5 +40,6 @@ __all__ = [
     "get_spacecraft_by_simulation",
     "get_trajectory",
     "get_trajectories_by_simulation",
+    "get_trajectories_by_spacecraft",
     "get_simulation_status",
 ]
