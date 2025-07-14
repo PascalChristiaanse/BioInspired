@@ -1,0 +1,135 @@
+{
+  "spacecraft_name": "Lander 2",
+  "version": "1.0",
+  "physical_properties": {
+    "dry_mass": 60000.0,
+    "fuel_mass": 20000.0,
+    "inertia_tensor": [
+      [7.2e9, 0.0, 0.0],
+      [0.0, 7.2e9, 0.0],
+      [0.0, 0.0, 14.4e9]
+    ],
+    "center_of_mass": [0.0, 0.0, 0.0]
+  },
+  "engines": [
+    {
+      "id": "main_engine",
+      "type": "main_propulsion",
+      "location": [0.0, 0.0, -1.8],
+      "thrust_direction": [0.0, 0.0, 1.0],
+      "maximum_thrust": 15000.0,
+      "specific_impulse": 311.0,
+      "minimum_impulse_bit": 150.0,
+      "throttleable": true,
+      "gimbal_range": [6.0, 6.0]
+    },
+    {
+      "id": "rcs_1",
+      "type": "rcs",
+      "location": [1.2, 1.2, 0.8],
+      "thrust_direction": [-1.0, 0.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 230.0,
+      "minimum_impulse_bit": 0.9,
+      "throttleable": false,
+      "gimbal_range": [0.0, 0.0]
+    },
+    {
+      "id": "rcs_2",
+      "type": "rcs",
+      "location": [-1.2, 1.2, 0.8],
+      "thrust_direction": [1.0, 0.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 230.0,
+      "minimum_impulse_bit": 0.9,
+      "throttleable": false,
+      "gimbal_range": [0.0, 0.0]
+    },
+    {
+      "id": "rcs_3",
+      "type": "rcs",
+      "location": [1.2, -1.2, 0.8],
+      "thrust_direction": [0.0, 1.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 230.0,
+      "minimum_impulse_bit": 0.9,
+      "throttleable": false,
+      "gimbal_range": [0.0, 0.0]
+    },
+    {
+      "id": "rcs_4",
+      "type": "rcs",
+      "location": [-1.2, -1.2, 0.8],
+      "thrust_direction": [0.0, -1.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 230.0,
+      "minimum_impulse_bit": 0.9,
+      "throttleable": false,
+      "gimbal_range": [0.0, 0.0]
+    },
+    {
+      "id": "rcs_5",
+      "type": "rcs",
+      "location": [1.2, 1.2, -1.2],
+      "thrust_direction": [-1.0, 0.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 230.0,
+      "minimum_impulse_bit": 0.9,
+      "throttleable": false,
+      "gimbal_range": [0.0, 0.0]
+    },
+    {
+      "id": "rcs_6",
+      "type": "rcs",
+      "location": [-1.2, 1.2, -1.2],
+      "thrust_direction": [1.0, 0.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 230.0,
+      "minimum_impulse_bit": 0.9,
+      "throttleable": false,
+      "gimbal_range": [0.0, 0.0]
+    },
+    {
+      "id": "rcs_7",
+      "type": "rcs",
+      "location": [1.2, -1.2, -1.2],
+      "thrust_direction": [0.0, 1.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 230.0,
+      "minimum_impulse_bit": 0.9,
+      "throttleable": false,
+      "gimbal_range": [0.0, 0.0]
+    },
+    {
+      "id": "rcs_8",
+      "type": "rcs",
+      "location": [-1.2, -1.2, -1.2],
+      "thrust_direction": [0.0, -1.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 230.0,
+      "minimum_impulse_bit": 0.9,
+      "throttleable": false,
+      "gimbal_range": [0.0, 0.0]
+    }
+  ],
+  "propellant": {
+    "type": "monopropellant",
+    "fuel": "hydrazine",
+    "tank_capacity": 150.0
+  },
+  "metadata": {
+    "created_date": "2025-07-12",
+    "author": "BioInspired Systems",
+    "description": "Configuration file for Lander 2 spacecraft - a bio-inspired lunar landing vehicle with advanced RCS control system",
+    "units": {
+      "mass": "kg",
+      "length": "m",
+      "force": "N",
+      "time": "s",
+      "power": "W",
+      "temperature": "C",
+      "specific_impulse": "s",
+      "frequency": "Hz"
+    }
+  }
+}
