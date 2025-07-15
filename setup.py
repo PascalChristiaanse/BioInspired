@@ -1,3 +1,25 @@
+def is_admin():
+    """Check if the script is running with admin rights (Windows only)."""
+    try:
+        import ctypes
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+    except Exception:
+        return False
+
+def relaunch_as_admin():
+    """Relaunch the script with admin rights (Windows only)."""
+    import sys
+    import os
+    import ctypes
+    params = ' '.join([f'"{arg}"' for arg in sys.argv])
+    executable = sys.executable
+    script = os.path.abspath(sys.argv[0])
+    # Use ShellExecuteW to relaunch as admin
+    ret = ctypes.windll.shell32.ShellExecuteW(None, "runas", executable, f'"{script}"', None, 1)
+    if int(ret) <= 32:
+        print("[ERROR] Failed to elevate permissions. Please run this script as administrator.")
+        sys.exit(1)
+    sys.exit(0)
 """
 Setup script for the BioInspired project.
 This script helps you get started with the database infrastructure.
@@ -70,12 +92,75 @@ def get_conda_pip():
 
 
 def setup_python_environment():
-    """Install Python dependencies in tudat-space conda environment."""
+    """Install Python dependencies in tudat-space conda environment and Blender's Python."""
     pip_command = get_conda_pip()
-    return run_command(
+    ok = run_command(
         f'{pip_command} install -r requirements.txt',
         "Installing Python dependencies in tudat-space environment",
     )
+
+    print("[INFO] Checking for Blender in PATH...")
+    blender_path = None
+    # Try 'where blender' in CMD
+    try:
+        result = subprocess.run(
+            ["cmd", "/c", "where blender"], check=True, capture_output=True, text=True
+        )
+        blender_path = result.stdout.strip().splitlines()[0]
+        print(f"[OK] Blender found at: {blender_path}")
+    except subprocess.CalledProcessError:
+        # Try 'Get-Command blender' in PowerShell
+        try:
+            result = subprocess.run(
+                ["powershell", "-Command", "Get-Command blender | Select-Object -ExpandProperty Source"],
+                check=True, capture_output=True, text=True
+            )
+            blender_path = result.stdout.strip().splitlines()[0]
+            if blender_path:
+                print(f"[OK] Blender found at: {blender_path}")
+            else:
+                raise subprocess.CalledProcessError(1, 'Get-Command')
+        except subprocess.CalledProcessError:
+            print("[ERROR] Blender executable not found in PATH!")
+            print("Please add the folder containing 'blender.exe' to your PATH environment variable.")
+            print("For example, if Blender is installed in C:\\Program Files\\Blender Foundation\\Blender, add that folder to PATH.")
+            print("After updating PATH, restart your terminal or computer and re-run this setup script.")
+            return False
+
+    # Get Blender's Python executable
+    print("[INFO] Locating Blender's bundled Python...")
+    try:
+        # Run Blender in background to get its Python executable path
+        get_py_cmd = (
+            f'"{blender_path}" --background --python-expr "import sys; print(sys.executable)"'
+        )
+        result = subprocess.run(
+            get_py_cmd, shell=True, check=True, capture_output=True, text=True
+        )
+        # Blender prints a lot, so look for the last line containing 'python'
+        python_lines = [line for line in result.stdout.splitlines() if 'python' in line.lower()]
+        if not python_lines:
+            print("[ERROR] Could not determine Blender's Python executable.")
+            return False
+        blender_python = python_lines[-1].strip()
+        print(f"[OK] Blender's Python found at: {blender_python}")
+    except Exception as e:
+        print(f"[ERROR] Failed to get Blender's Python executable: {e}")
+        return False
+
+    # Install requirements into Blender's Python
+    print("[INFO] Installing requirements into Blender's Python environment...")
+    # Ensure pip is available in Blender's Python
+    ensure_pip_cmd = f'"{blender_python}" -m ensurepip'
+    run_command(ensure_pip_cmd, "Ensuring pip is available in Blender's Python")
+    # Upgrade pip
+    upgrade_pip_cmd = f'"{blender_python}" -m pip install --upgrade pip'
+    run_command(upgrade_pip_cmd, "Upgrading pip in Blender's Python")
+    # Install requirements
+    install_cmd = f'"{blender_python}" -m pip install -r requirements.txt'
+    ok_blender = run_command(install_cmd, "Installing Python dependencies in Blender's Python")
+
+    return ok and ok_blender
 
 
 def start_database():
@@ -91,6 +176,12 @@ def initialize_database():
 
 def main():
     """Main setup process."""
+
+    # Check for admin rights and relaunch if not admin
+    if os.name == "nt" and not is_admin():
+        print("[INFO] Relaunching setup with administrator privileges...")
+        relaunch_as_admin()
+
     print("BioInspired Project Setup")
     print("=" * 40)
 
@@ -116,6 +207,8 @@ def main():
         print(f"\n[INFO] Step: {step_name}")
         if not step_func():
             print(f"[ERROR] Setup failed at step: {step_name}")
+            if os.name == "nt":
+                input("Press Enter to exit...")
             return False
     print("\n[OK] Setup completed successfully!")
     print("\nNext steps:")
@@ -130,7 +223,8 @@ def main():
     print("   or activate the environment first:")
     print("   conda activate tudat-space")
     print("   python your_script.py")
-
+    if os.name == "nt":
+        input("Press Enter to exit...")
     return True
 
 
