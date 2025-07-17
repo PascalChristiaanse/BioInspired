@@ -13,26 +13,12 @@
   },
   "engines": [
     {
-      "id": "main_engine",
-      "type": "main_propulsion",
-      "location": [0.0, 0.0, -1.8],
-      "thrust_direction": [0.0, 0.0, 1.0],
-      "maximum_thrust": 15000.0,
-      "specific_impulse": 311.0,
-      "minimum_impulse_bit": 150.0,
-      "throttleable": true,
-      "gimbal_range": [6.0, 6.0]
-    },
-    {
       "id": "rcs_1",
       "type": "rcs",
       "location": [1.2, 1.2, 0.8],
       "thrust_direction": [-1.0, 0.0, 0.0],
       "maximum_thrust": 445.0,
-      "specific_impulse": 230.0,
-      "minimum_impulse_bit": 0.9,
-      "throttleable": false,
-      "gimbal_range": [0.0, 0.0]
+      "specific_impulse": 315.0
     },
     {
       "id": "rcs_2",
@@ -40,10 +26,7 @@
       "location": [-1.2, 1.2, 0.8],
       "thrust_direction": [1.0, 0.0, 0.0],
       "maximum_thrust": 445.0,
-      "specific_impulse": 230.0,
-      "minimum_impulse_bit": 0.9,
-      "throttleable": false,
-      "gimbal_range": [0.0, 0.0]
+      "specific_impulse": 315.0
     },
     {
       "id": "rcs_3",
@@ -51,10 +34,7 @@
       "location": [1.2, -1.2, 0.8],
       "thrust_direction": [0.0, 1.0, 0.0],
       "maximum_thrust": 445.0,
-      "specific_impulse": 230.0,
-      "minimum_impulse_bit": 0.9,
-      "throttleable": false,
-      "gimbal_range": [0.0, 0.0]
+      "specific_impulse": 315.0
     },
     {
       "id": "rcs_4",
@@ -62,10 +42,7 @@
       "location": [-1.2, -1.2, 0.8],
       "thrust_direction": [0.0, -1.0, 0.0],
       "maximum_thrust": 445.0,
-      "specific_impulse": 230.0,
-      "minimum_impulse_bit": 0.9,
-      "throttleable": false,
-      "gimbal_range": [0.0, 0.0]
+      "specific_impulse": 315.0
     },
     {
       "id": "rcs_5",
@@ -73,10 +50,7 @@
       "location": [1.2, 1.2, -1.2],
       "thrust_direction": [-1.0, 0.0, 0.0],
       "maximum_thrust": 445.0,
-      "specific_impulse": 230.0,
-      "minimum_impulse_bit": 0.9,
-      "throttleable": false,
-      "gimbal_range": [0.0, 0.0]
+      "specific_impulse": 315.0
     },
     {
       "id": "rcs_6",
@@ -84,10 +58,7 @@
       "location": [-1.2, 1.2, -1.2],
       "thrust_direction": [1.0, 0.0, 0.0],
       "maximum_thrust": 445.0,
-      "specific_impulse": 230.0,
-      "minimum_impulse_bit": 0.9,
-      "throttleable": false,
-      "gimbal_range": [0.0, 0.0]
+      "specific_impulse": 315.0
     },
     {
       "id": "rcs_7",
@@ -95,10 +66,7 @@
       "location": [1.2, -1.2, -1.2],
       "thrust_direction": [0.0, 1.0, 0.0],
       "maximum_thrust": 445.0,
-      "specific_impulse": 230.0,
-      "minimum_impulse_bit": 0.9,
-      "throttleable": false,
-      "gimbal_range": [0.0, 0.0]
+      "specific_impulse": 315.0
     },
     {
       "id": "rcs_8",
@@ -106,21 +74,13 @@
       "location": [-1.2, -1.2, -1.2],
       "thrust_direction": [0.0, -1.0, 0.0],
       "maximum_thrust": 445.0,
-      "specific_impulse": 230.0,
-      "minimum_impulse_bit": 0.9,
-      "throttleable": false,
-      "gimbal_range": [0.0, 0.0]
+      "specific_impulse": 315.0
     }
   ],
-  "propellant": {
-    "type": "monopropellant",
-    "fuel": "hydrazine",
-    "tank_capacity": 150.0
-  },
   "metadata": {
     "created_date": "2025-07-12",
     "author": "BioInspired Systems",
-    "description": "Configuration file for Lander 2 spacecraft - a bio-inspired lunar landing vehicle with advanced RCS control system",
+    "description": "Configuration file for Lander 2 spacecraft based on the movie Interstellar (2014)",
     "units": {
       "mass": "kg",
       "length": "m",
