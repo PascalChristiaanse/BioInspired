@@ -5,7 +5,8 @@ bioinspired package. It contains:
     - A simplified spacecraft to test basic simulation functionality.
     - The Endurance spacecraft from the movie Interstellar.
     - The Lander 2 spacecraft from the movie Interstellar."""
-    
-from .simple_craft import SimpleCraft
 
-__all__ = ["SimpleCraft"]
+from .simple_craft import SimpleCraft
+from .lander_2 import Lander2
+
+__all__ = ["SimpleCraft", "Lander2"]

@@ -85,7 +85,7 @@ def serialize_dynamics_simulator(dynamics_simulator):
             "termination_reason": str(td.termination_reason)
             if hasattr(td, "termination_reason")
             else None,
-            "was_condition_met_when_stopping": td.was_condition_met_when_stopping,
+            "was_condition_met_when_stopping": td.was_condition_met_when_stopping if hasattr(td, "was_condition_met_when_stopping") else None,
         },
         "total_computation_time": pr.total_computation_time,
         "total_number_of_function_evaluations": pr.total_number_of_function_evaluations,
