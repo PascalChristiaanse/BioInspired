@@ -31,7 +31,7 @@ except ImportError as e:
 class TrajectoryRenderer:
     """Renders simulation trajectories in Blender."""
 
-    def __init__(self, scene_manager=None, scale_factor: float = 1.0 / 1000000.0):
+    def __init__(self, scene_manager=None, scale_factor: float = 1.0 / 1e6):
         """
         Initialize trajectory renderer.
 
@@ -46,16 +46,9 @@ class TrajectoryRenderer:
     def load_trajectory_from_database(self, trajectory_id: int) -> Tuple[Optional[np.ndarray], Optional[Trajectory]]:
         """
         Load trajectory data from the database using the new services.
-        
-        Args:
-            trajectory_id: The database ID of the trajectory to load.
-            
-        Returns:
-            A tuple containing:
-            - A numpy array of shape (N, 3) with trajectory coordinates.
-            - The SQLAlchemy Trajectory object.
-            Returns (None, None) if loading fails.
+        Handles both JSON and Python dict string formats.
         """
+        import ast
         print(f"Loading trajectory with ID: {trajectory_id}")
         try:
             trajectory_record = get_trajectory(trajectory_id)
@@ -63,25 +56,56 @@ class TrajectoryRenderer:
                 print(f"Error: Trajectory with ID {trajectory_id} not found.")
                 return None, None
 
-            # The dynamics_simulator field is expected to be a dict/JSON
             sim_data = trajectory_record.dynamics_simulator
-            if isinstance(sim_data[0], str):
-                sim_data = json.loads(sim_data[0])
+            # Defensive: handle None, empty, or unexpected types
+            if sim_data is None or (hasattr(sim_data, '__len__') and len(sim_data) == 0):
+                print(f"Error: dynamics_simulator is empty for trajectory {trajectory_id}.")
+                return None, None
 
-            if not sim_data or 'state_history' not in sim_data:
+            # Normalize sim_data to a string or dict
+            sim_data_str = None
+            sim_dict = None
+            if isinstance(sim_data, dict):
+                sim_dict = sim_data
+            elif isinstance(sim_data, (list, tuple)) and len(sim_data) > 0:
+                if isinstance(sim_data[0], dict):
+                    sim_dict = sim_data[0]
+                else:
+                    sim_data_str = sim_data[0]
+            elif isinstance(sim_data, str):
+                sim_data_str = sim_data
+
+            if sim_dict is None and sim_data_str is not None:
+                # Try JSON first, then literal_eval
+                try:
+                    sim_dict = json.loads(sim_data_str)
+                except Exception:
+                    try:
+                        import ast
+                        sim_dict = ast.literal_eval(sim_data_str)
+                    except Exception as e:
+                        print(f"Error: Could not parse dynamics_simulator string for trajectory {trajectory_id}: {e}")
+                        return None, None
+
+            if sim_dict is None:
+                print(f"Error: dynamics_simulator is not a recognized type for trajectory {trajectory_id}.")
+                return None, None
+
+            if not sim_dict or 'state_history' not in sim_dict:
                 print(f"Error: No state history found in trajectory {trajectory_id}.")
                 return None, None
 
-            state_history = sim_data['state_history']
-            
-            # Sort state history by time (keys are strings of floats)
-            # and extract position (first 3 elements of each state vector)
+            state_history = sim_dict['state_history']
+            if not isinstance(state_history, dict) or len(state_history) == 0:
+                print(f"Error: state_history is empty or not a dict for trajectory {trajectory_id}.")
+                return None, None
+
             sorted_times = sorted(state_history.keys(), key=float)
             trajectory_points = np.array([state_history[t][:3] for t in sorted_times])
-            
+
             print(f"Successfully loaded {len(trajectory_points)} points for trajectory {trajectory_id}.")
             return trajectory_points, trajectory_record
-            
+
         except Exception as e:
             print(f"An unexpected error occurred while loading trajectory {trajectory_id}: {e}")
             import traceback
