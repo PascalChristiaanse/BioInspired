@@ -64,9 +64,9 @@ class SpacecraftBase(ABC):
         )
         return self._acceleration_model
     
-    def _dump_acceleration_settings(self) -> str:
+    def dump_acceleration_settings(self) -> str:
         """Dump the acceleration settings to a string representation in a JSON format."""
-        return json.dumps(self._get_acceleration_settings())
+        return json.dumps(self._acceleration_settings)
 
     @abstractmethod
     def _get_acceleration_settings(self) -> dict[str, dict[str, list[acceleration.AccelerationSettings]]]:
@@ -76,7 +76,7 @@ class SpacecraftBase(ABC):
         for body in self._simulation._get_body_model().list_of_bodies():
             if body == self.name:
                 continue
-            acceleration_dict[body.name] = [acceleration.point_mass_gravity()]
+            acceleration_dict[body] = [acceleration.point_mass_gravity()]
 
         # Create global accelerations dictionary.
         self._acceleration_settings = {self.name: acceleration_dict}
@@ -182,5 +182,4 @@ class SpacecraftBase(ABC):
 
     def dump_termination_settings(self) -> str:
         """Dump the termination settings to a string representation in a JSON format."""
-        import json
         return json.dumps(self._termination_settings)
