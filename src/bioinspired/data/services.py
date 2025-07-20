@@ -218,7 +218,7 @@ def save_spacecraft(
 
     def _save_craft(session: Session) -> Spacecraft:
         # Serialize initial state
-        initial_state_data = serialize_numpy_array(spacecraft._initial_state)
+        initial_state_data = serialize_numpy_array(spacecraft._translational_state)
 
         # Use new dump methods for better serialization
         try:
