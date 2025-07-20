@@ -25,7 +25,7 @@ class SimpleCraft(SpacecraftBase):
     def _get_acceleration_settings(self):
         return super()._get_acceleration_settings()
 
-    def _get_propagator(self) -> propagator.PropagatorSettings:
+    def _get_propagator(self) -> list[propagator.PropagatorSettings]:
         """Return the propagator settings for the spacecraft."""
         # Create a propagator settings object for the spacecraft
         # Create propagation settings.
@@ -33,7 +33,7 @@ class SimpleCraft(SpacecraftBase):
             self._simulation._get_central_body(),
             self._get_acceleration_model(),
             [self.name],
-            self._initial_state,
+            self._translational_state,
             self._simulation._start_epoch,
             self._simulation._get_integrator(),
             self._get_termination(),
