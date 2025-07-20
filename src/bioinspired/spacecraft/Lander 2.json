@@ -1,0 +1,93 @@
+{
+  "spacecraft_name": "Lander 2",
+  "version": "1.0",
+  "dry_mass": 60000.0,
+  "fuel_mass": 20000.0,
+  "inertia_tensor": [
+    [7.2e9, 0.0, 0.0],
+    [0.0, 7.2e9, 0.0],
+    [0.0, 0.0, 14.4e9]
+  ],
+  "center_of_mass": [0.0, 0.0, 0.0],
+  "engines": [
+    {
+      "id": "rcs_1",
+      "type": "rcs",
+      "location": [1.2, 1.2, 0.8],
+      "thrust_direction": [-1.0, 0.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_2",
+      "type": "rcs",
+      "location": [-1.2, 1.2, 0.8],
+      "thrust_direction": [1.0, 0.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_3",
+      "type": "rcs",
+      "location": [1.2, -1.2, 0.8],
+      "thrust_direction": [0.0, 1.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_4",
+      "type": "rcs",
+      "location": [-1.2, -1.2, 0.8],
+      "thrust_direction": [0.0, -1.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_5",
+      "type": "rcs",
+      "location": [1.2, 1.2, -1.2],
+      "thrust_direction": [-1.0, 0.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_6",
+      "type": "rcs",
+      "location": [-1.2, 1.2, -1.2],
+      "thrust_direction": [1.0, 0.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_7",
+      "type": "rcs",
+      "location": [1.2, -1.2, -1.2],
+      "thrust_direction": [0.0, 1.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_8",
+      "type": "rcs",
+      "location": [-1.2, -1.2, -1.2],
+      "thrust_direction": [0.0, -1.0, 0.0],
+      "maximum_thrust": 445.0,
+      "specific_impulse": 315.0
+    }
+  ],
+  "metadata": {
+    "created_date": "2025-07-12",
+    "author": "BioInspired Systems",
+    "description": "Configuration file for Lander 2 spacecraft based on the movie Interstellar (2014)",
+    "units": {
+      "mass": "kg",
+      "length": "m",
+      "force": "N",
+      "time": "s",
+      "power": "W",
+      "temperature": "C",
+      "specific_impulse": "s",
+      "frequency": "Hz"
+    }
+  }
+}
