@@ -13,7 +13,7 @@ from tudatpy.numerical_simulation.propagation_setup import (
 )
 
 
-class SimulatorBase(ABC):
+class SimulationBase(ABC):
     """Base class for spacecraft designs.
 
     This class provides an interface for simulator designs.
@@ -31,7 +31,7 @@ class SimulatorBase(ABC):
 
         # Simulator owned
         self._body_model: SystemOfBodies = None
-        self._get_body_model()
+        self.get_body_model()
         self._integrator: integrator.IntegratorSettings = None
         self._get_integrator()
 
@@ -55,14 +55,14 @@ class SimulatorBase(ABC):
         raise NotImplementedError("This method should be implemented by subclasses.")
 
     @abstractmethod
-    def _get_body_model(self) -> SystemOfBodies:
+    def get_body_model(self) -> SystemOfBodies:
         """Return the body model object"""
         raise NotImplementedError("This method should be implemented by subclasses.")
 
     def _dump_body_model(self) -> str:
         """Dump the body model to a string representation in a JSON format such that it can be saved to the database."""
 
-        body_model = self._get_body_model()
+        body_model = self.get_body_model()
         list_of_bodies = body_model.list_of_bodies()
 
         # Create a minimal representation for database storage
@@ -83,11 +83,11 @@ class SimulatorBase(ABC):
 
         propagators = []
         for propagator_func in self._propagator_list:
-            propagators.append(propagator_func())
+            propagators.extend(propagator_func())
 
         self._propagator = propagator.multitype(
             propagators,
-            self._integrator,
+            self._get_integrator(),
             self._start_epoch,
             self._get_termination_conditions(),
             # output_variables=dependent_variables_to_save,
@@ -195,6 +195,6 @@ class SimulatorBase(ABC):
         
         
         return create_dynamics_simulator(
-            self._get_body_model(), 
+            self.get_body_model(), 
             self._get_propagators()
         )

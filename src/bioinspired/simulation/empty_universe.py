@@ -16,11 +16,11 @@ from tudatpy.numerical_simulation.environment_setup import (
     BodyListSettings,
 )
 
-from .simulation_base import SimulatorBase
+from .simulation_base import SimulationBase
 from bioinspired.spacecraft import SimpleCraft
 
 
-class EmptyUniverseSimulator(SimulatorBase):
+class EmptyUniverseSimulator(SimulationBase):
     """Empty Universe Simulator class.
 
     This class provides an empty universe simulation environment with no gravitational bodies.
@@ -40,7 +40,7 @@ class EmptyUniverseSimulator(SimulatorBase):
         """Return the integrator settings object."""
         # Create numerical integrator settings.
         if self._integrator is None:
-            fixed_step_size = 10.0
+            fixed_step_size = 0.01
             self._integrator = integrator.runge_kutta_fixed_step(
                 fixed_step_size,
                 coefficient_set=integrator.CoefficientSets.rk_4,
@@ -50,10 +50,10 @@ class EmptyUniverseSimulator(SimulatorBase):
     @override
     def _dump_integrator_settings(self) -> str:
         """Dump the integrator settings to a string representation in a JSON format."""
-        return json.dumps({"step_size": 10.0, "type": "RK4"})
+        return json.dumps({"step_size": 0.01, "type": "RK4"})
 
     @override
-    def _get_body_model(self) -> SystemOfBodies:
+    def get_body_model(self) -> SystemOfBodies:
         """Return the body model object."""
         # Create an empty body model.
         if self._body_model is None:
@@ -82,7 +82,7 @@ def main():
 
     # Check all bodies in the system
     print("Bodies in the system:")
-    for body in simulator._get_body_model().list_of_bodies():
+    for body in simulator.get_body_model().list_of_bodies():
         print(f" - {body}")
 
     # Check the spacecraft's acceleration settings
