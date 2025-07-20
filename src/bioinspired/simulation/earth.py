@@ -19,11 +19,11 @@ from tudatpy.numerical_simulation.environment_setup import (
     get_default_body_settings,
 )
 
-from .simulation_base import SimulatorBase
+from .simulation_base import SimulationBase
 from bioinspired.spacecraft import SimpleCraft
 
 
-class EarthSimulator(SimulatorBase):
+class EarthSimulator(SimulationBase):
     """Earth Universe Simulator class.
 
     This class provides a simulation environment with only the Earth as a gravitational body.
@@ -40,7 +40,7 @@ class EarthSimulator(SimulatorBase):
         return ["Earth"]
 
     @override
-    def _get_body_model(self) -> SystemOfBodies:
+    def get_body_model(self) -> SystemOfBodies:
         """Return the body model object."""
         if self._body_model is None:
             
