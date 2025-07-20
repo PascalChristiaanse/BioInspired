@@ -8,5 +8,8 @@ bioinspired package. It contains:
 
 from .simple_craft import SimpleCraft
 from .lander_2 import Lander2
+from .spacecraft_base import SpacecraftBase
+from .rotating_spacecraft_base import RotatingSpacecraftBase
+from .JSON_spacecraft_base import JSONSpacecraftBase
 
-__all__ = ["SimpleCraft", "Lander2"]
+__all__ = ["SimpleCraft", "Lander2", "SpacecraftBase", "RotatingSpacecraftBase", "JSONSpacecraftBase"]
