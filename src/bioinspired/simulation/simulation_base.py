@@ -176,10 +176,11 @@ class SimulationBase(ABC):
         """Dump the termination conditions to a string representation in a JSON format such that it can be saved to the database."""
         return json.dumps(self._custom_termination_list)
 
-    def run(self, start_epoch: float, simulation_time: float):
+    def run(self, start_epoch: float, end_epoch: float):
         """Run the simulation"""
         self._start_epoch = start_epoch
-        self._end_epoch = start_epoch + simulation_time
+        self._end_epoch = end_epoch
+        self._termination_list = []
         self.add_termination_condition(
             {
                 "type": "propagator.PropagationTimeTerminationSettings",
