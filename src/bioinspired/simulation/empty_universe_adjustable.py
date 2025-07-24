@@ -20,15 +20,22 @@ from .simulation_base import SimulationBase
 from bioinspired.spacecraft import SimpleCraft
 
 
-class EmptyUniverseSimulator(SimulationBase):
+class EmptyUniverseSimulatorAdjustable(SimulationBase):
     """Empty Universe Simulator class.
 
     This class provides an empty universe simulation environment with no gravitational bodies.
     It inherits from the base simulator class and implements the required methods.
     """
 
-    @override
-    def __init__(self):
+    def __init__(
+        self,
+        stepsize: float = 0.01,
+        coefficient_set: integrator.CoefficientSets = integrator.CoefficientSets.rk_4,
+        integrator_type: str = "runge_kutta",
+    ):
+        self._stepsize = stepsize
+        self._coefficient_set = coefficient_set
+        self._integrator_type = integrator_type
         super().__init__()
 
     @override
@@ -40,17 +47,42 @@ class EmptyUniverseSimulator(SimulationBase):
         """Return the integrator settings object."""
         # Create numerical integrator settings.
         if self._integrator is None:
-            fixed_step_size = 0.01
-            self._integrator = integrator.runge_kutta_fixed_step(
-                fixed_step_size,
-                coefficient_set=integrator.CoefficientSets.rk_4,
-            )
+            if self._integrator_type == "runge_kutta":
+                self._integrator = integrator.runge_kutta_fixed_step(
+                    self._stepsize,
+                    coefficient_set=self._coefficient_set,
+                )
+            elif self._integrator_type == "bulirsch_stoer":
+                self._integrator = integrator.bulirsch_stoer_fixed_step(
+                    self._stepsize,
+                    extrapolation_sequence=integrator.ExtrapolationMethodStepSequences.bulirsch_stoer_sequence,
+                    maximum_number_of_steps=6
+                )
+            elif self._integrator_type == "adams_bashforth_moulton":
+                self._integrator = integrator.adams_bashforth_moulton_fixed_step(
+                    self._stepsize,
+                    relative_error_tolerance=1e-12,
+                    absolute_error_tolerance=1e-12,
+                    minimum_order=6,
+                    maximum_order=11
+                )
+            else:
+                raise ValueError(f"Unknown integrator type: {self._integrator_type}")
         return self._integrator
 
     @override
     def _dump_integrator_settings(self) -> str:
         """Dump the integrator settings to a string representation in a JSON format."""
-        return json.dumps({"step_size": 0.01, "type": "RK4"})
+        integrator_info = {
+            "step_size": self._stepsize,
+            "integrator_type": self._integrator_type,
+        }
+        
+        if self._integrator_type in ["runge_kutta", "adams_bashforth_moulton"]:
+            coefficient_name = self._coefficient_set.name if hasattr(self._coefficient_set, 'name') else str(self._coefficient_set)
+            integrator_info["coefficient_set"] = coefficient_name
+        
+        return json.dumps(integrator_info)
 
     @override
     def get_body_model(self) -> SystemOfBodies:
@@ -73,7 +105,7 @@ def main():
     spice.load_standard_kernels()
 
     # Create an instance of the EmptyUniverseSimulator
-    simulator = EmptyUniverseSimulator()
+    simulator = EmptyUniverseSimulatorAdjustable()
 
     spacecraft = SimpleCraft(
         simulation=simulator, initial_state=np.array([6378e3, 0, 0, 0, 8e3, 0])
