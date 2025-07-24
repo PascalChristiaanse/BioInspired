@@ -23,15 +23,22 @@ from .simulation_base import SimulationBase
 from bioinspired.spacecraft import SimpleCraft
 
 
-class EarthSimulator(SimulationBase):
+class EarthSimulatorAdjustable(SimulationBase):
     """Earth Universe Simulator class.
 
     This class provides a simulation environment with only the Earth as a gravitational body.
     It inherits from the base simulator class and implements the required methods.
     """
 
-    @override
-    def __init__(self):
+    def __init__(
+        self,
+        stepsize: float = 0.01,
+        coefficient_set: integrator.CoefficientSets = integrator.CoefficientSets.rk_4,
+        integrator_type: str = "runge_kutta",
+    ):
+        self._stepsize = stepsize
+        self._coefficient_set = coefficient_set
+        self._integrator_type = integrator_type
         super().__init__()
         
 
@@ -59,14 +66,30 @@ class EarthSimulator(SimulationBase):
         """Return the integrator settings object."""
         # Create numerical integrator settings.
         if self._integrator is None:
-            fixed_step_size = 10.0
-            self._integrator = integrator.runge_kutta_fixed_step(
-                fixed_step_size,
-                coefficient_set=integrator.CoefficientSets.rk_4,
-            )
+            if self._integrator_type == "runge_kutta":
+                self._integrator = integrator.runge_kutta_fixed_step(
+                    self._stepsize,
+                    coefficient_set=self._coefficient_set,
+                )
+            elif self._integrator_type == "bulirsch_stoer":
+                self._integrator = integrator.bulirsch_stoer_fixed_step(
+                    self._stepsize,
+                    extrapolation_sequence=integrator.ExtrapolationMethodStepSequences.bulirsch_stoer_sequence,
+                    maximum_number_of_steps=6
+                )
+            elif self._integrator_type == "adams_bashforth_moulton":
+                self._integrator = integrator.adams_bashforth_moulton_fixed_step(
+                    self._stepsize,
+                    relative_error_tolerance=1e-12,
+                    absolute_error_tolerance=1e-12,
+                    minimum_order=6,
+                    maximum_order=11
+                )
+            else:
+                raise ValueError(f"Unknown integrator type: {self._integrator_type}")
         return self._integrator
 
     @override
     def _dump_integrator_settings(self) -> str:
         """Dump the integrator settings to a string representation in a JSON format."""
-        return json.dumps({"step_size": 100.0, "type": "RK4"})
+        return json.dumps({"step_size": 0.1, "type": "RK4"})
