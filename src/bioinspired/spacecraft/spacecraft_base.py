@@ -68,7 +68,7 @@ class SpacecraftBase(ABC):
         )
         return self._acceleration_model
 
-    def dump_acceleration_settings(self) -> str:
+    def _dump_acceleration_settings(self) -> str:
         """Dump the acceleration settings to a string representation in a JSON format."""
         return json.dumps(self._acceleration_settings)
 
