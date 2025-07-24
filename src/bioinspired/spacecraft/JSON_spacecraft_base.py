@@ -83,17 +83,13 @@ class JSONSpacecraftBase(SpacecraftBase):
         self._validate_config(config)
         # Set properties based on the configuration
         for prop, value in config.items():
-            if not hasattr(self, prop):
-                if isinstance(value, list):
-                    self.__dict__["_" + prop] = np.array(value)
-                else:
-                    setattr(self, "_" + prop, value)
+            # if not hasattr(self, prop):
+            if isinstance(value, list):
+                self.__dict__["_" + prop] = np.array(value)
             else:
-                raise UserWarning(
-                    f"Property {prop} is already defined in the spacecraft class and is overwritting the JSON configuration."
-                )
+                self.__dict__["_" + prop] = value
+            # else:
+            #     raise UserWarning(
+            #         f"Property {prop} is already defined in the spacecraft class and is overwritting the JSON configuration."
+            #     )
 
-    def get_engines(self) -> list[dict]:
-        """Get the list of engines defined in the spacecraft configuration."""
-        if not hasattr(self, "_config"):
-            self._config = self._load_config()
