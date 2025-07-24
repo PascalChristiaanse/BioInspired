@@ -29,7 +29,7 @@ class SimpleCraft(SpacecraftBase):
         """Return the propagator settings for the spacecraft."""
         # Create a propagator settings object for the spacecraft
         # Create propagation settings.
-        return propagator.translational(
+        return [propagator.translational(
             self._simulation._get_central_body(),
             self._get_acceleration_model(),
             [self.name],
@@ -38,7 +38,7 @@ class SimpleCraft(SpacecraftBase):
             self._simulation._get_integrator(),
             self._get_termination(),
             # output_variables=dependent_variables_to_save
-        )
+        )]
 
 
 def main():
