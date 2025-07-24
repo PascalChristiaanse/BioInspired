@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from tudatpy.numerical_simulation import create_dynamics_simulator
 from tudatpy.numerical_simulation.environment import SystemOfBodies
 from tudatpy.numerical_simulation.propagation_setup import (
+    dependent_variable,
     propagator,
     integrator,
 )
@@ -22,7 +23,6 @@ class SimulationBase(ABC):
     """
 
     def __init__(self):
-        super().__init__()
         self._start_epoch: float = 0.0  # Start epoch of the simulation
         self._end_epoch: float = 100.0  # End epoch of the simulation
 
@@ -80,6 +80,8 @@ class SimulationBase(ABC):
 
     def _get_propagators(self) -> propagator.PropagatorSettings:
         """Compile the propagators for the simulation."""
+        # if self._propagator is not None:
+        #     return self._propagator
 
         propagators = []
         for propagator_func in self._propagator_list:
@@ -90,8 +92,11 @@ class SimulationBase(ABC):
             self._get_integrator(),
             self._start_epoch,
             self._get_termination_conditions(),
-            # output_variables=dependent_variables_to_save,
+            # output_variables=[
+            #     dependent_variable.total_acceleration("Delfi-C3"),
+            # ],
         )
+        self._propagator.print_settings.print_initial_and_final_conditions = True
         return self._propagator
 
     def _get_termination_conditions(self):
@@ -111,23 +116,19 @@ class SimulationBase(ABC):
                 == "propagator.PropagationDependentVariableTerminationSettings"
             ):
                 # Create a dependent variable termination condition
-                termination_settings = (
-                    propagator.dependent_variable_termination(
-                        condition, value
-                    )
+                termination_settings = propagator.dependent_variable_termination(
+                    condition, value
                 )
                 self._termination_list.append(termination_settings)
             elif condition_type == "propagator.PropagationTimeTerminationSettings":
                 # Create a time termination condition
                 termination_settings = propagator.time_termination(
-                    value
+                    value, terminate_exactly_on_final_condition=True
                 )
                 self._termination_list.append(termination_settings)
             elif condition_type == "propagator.PropagationCPUTimeTerminationSettings":
                 # Create a CPU time termination condition
-                termination_settings = propagator.cpu_time_termination(
-                    value
-                )
+                termination_settings = propagator.cpu_time_termination(value)
                 self._termination_list.append(termination_settings)
             else:
                 raise ValueError(
@@ -193,9 +194,5 @@ class SimulationBase(ABC):
             f"Running simulation from {self._start_epoch} to {self._end_epoch} seconds."
         )
         print("Termination conditions:", self.dump_termination_conditions())
-        
-        
-        return create_dynamics_simulator(
-            self.get_body_model(), 
-            self._get_propagators()
-        )
+
+        return create_dynamics_simulator(self.get_body_model(), self._get_propagators())
