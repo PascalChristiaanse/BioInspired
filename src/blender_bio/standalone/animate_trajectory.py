@@ -33,7 +33,7 @@ def animate_trajectory_from_database(
     animation_frames: int = 250,
     show_trajectory_path: bool = True,
     show_spacecraft: bool = True,
-    show_camera_animation: bool = False
+    show_camera_animation: bool = True
 ):
     """Animate a trajectory from the database."""
     print(f"Animating trajectory {trajectory_id}...")
@@ -43,7 +43,7 @@ def animate_trajectory_from_database(
     scene_manager.setup_scene()
     
     # Setup animation manager
-    animator = AnimationManager()
+    animator = AnimationManager(scale_factor=10)
     animator.set_animation_range(1, animation_frames)
     
     # Setup trajectory renderer for path visualization
@@ -65,7 +65,7 @@ def animate_trajectory_from_database(
             print(f"Error: Trajectory with ID {trajectory_id} not found.")
             return False
         
-        trajectory_data, velocities, times = animator.extract_trajectory_data(trajectory_record)
+        trajectory_data, velocities, times = animator.extract_trajectory_data(trajectory_record)[:3]  # Only get first 3 for backward compatibility
         if trajectory_data is None:
             print(f"Error: Could not extract trajectory data for ID {trajectory_id}")
             return False
@@ -80,36 +80,52 @@ def animate_trajectory_from_database(
                 color=(0.3, 0.7, 0.9, 1.0)  # Light blue
             )
             
-            # Animate trajectory growth
-            animator.animate_trajectory_growth(trajectory_path, animation_frames)
-            print("Created animated trajectory path")
+            # Extract time data for trajectory growth animation
+            positions, velocities, times, quaternions, angular_velocities = animator.extract_trajectory_data(trajectory_record)
+            
+            # Animate trajectory growth with variable timing support
+            animator.animate_trajectory_growth(trajectory_path, animation_frames, times)
+            print("Created animated trajectory path with variable timing support")
         except Exception as e:
             print(f"Error creating trajectory path: {e}")
     
     # Create and animate spacecraft
+    spacecraft = None
     if show_spacecraft:
         try:
-            # Extract full trajectory data for spacecraft animation
-            positions, velocities, times = animator.extract_trajectory_data(trajectory_record)
+            # Extract full trajectory data for spacecraft animation including rotational data
+            positions, velocities, times, quaternions, angular_velocities = animator.extract_trajectory_data(trajectory_record)
             
             if positions is not None:
                 # Create spacecraft object
                 spacecraft = animator.create_spacecraft_object(
                     f"spacecraft_{trajectory_id}", 
-                    size=0.5 * animator.scale_factor * 1000  # Adjust size based on scale
+                    size=20 * animator.scale_factor  # Adjust size based on scale
                 )
                 
-                # Animate spacecraft along trajectory
+                # Animate spacecraft along trajectory with full rotational data
                 success = animator.animate_object_along_trajectory(
                     spacecraft, 
                     positions, 
                     velocities, 
                     times, 
+                    quaternions,  # Pass quaternion data for accurate rotation
+                    angular_velocities,  # Pass angular velocity data
                     animation_frames
                 )
                 
                 if success:
-                    print("Created animated spacecraft")
+                    if quaternions is not None:
+                        print("Created animated spacecraft with rotational dynamics")
+                    else:
+                        print("Created animated spacecraft with translational dynamics only")
+                    
+                    # Show timing information if available
+                    if times is not None:
+                        time_duration = times[-1] - times[0]
+                        dt_values = np.diff(times)
+                        print(f"  - Simulation time: {times[0]:.3f}s to {times[-1]:.3f}s ({time_duration:.3f}s total)")
+                        print(f"  - Time steps: min={np.min(dt_values):.6f}s, max={np.max(dt_values):.6f}s, mean={np.mean(dt_values):.6f}s")
                 else:
                     print("Failed to animate spacecraft")
             else:
@@ -117,22 +133,35 @@ def animate_trajectory_from_database(
         except Exception as e:
             print(f"Error creating spacecraft animation: {e}")
     
-    # Animate camera following trajectory
-    if show_camera_animation and trajectory_data is not None:
+    # Animate camera tracking the spacecraft
+    if show_camera_animation and spacecraft is not None:
         try:
-            success = animator.animate_camera_path(
-                trajectory_data, 
-                animation_frames,
-                camera_offset=np.array([0, -20, 10]),  # Camera behind and above
-                target_offset=np.array([0, 10, 0])     # Look slightly ahead
-            )
+            # Extract trajectory data for camera animation
+            positions, velocities, times, quaternions, angular_velocities = animator.extract_trajectory_data(trajectory_record)
             
-            if success:
-                print("Created camera animation")
+            if positions is not None:
+                success = animator.animate_camera_tracking_object(
+                    spacecraft,
+                    positions,
+                    animation_frames,
+                    times=times,  # Pass time data for variable step size support
+                    camera_offset=np.array([50, -50, 0]) / animator.scale_factor,  # Camera behind and above
+                    look_ahead_frames=0  # Look slightly ahead in the trajectory for smoother tracking
+                )
+                
+                if success:
+                    if times is not None:
+                        print("Created camera tracking animation with variable timing")
+                    else:
+                        print("Created camera tracking animation with uniform timing")
+                else:
+                    print("Failed to animate camera tracking")
             else:
-                print("Failed to animate camera")
+                print("No position data available for camera tracking")
         except Exception as e:
-            print(f"Error creating camera animation: {e}")
+            print(f"Error creating camera tracking: {e}")
+    elif show_camera_animation and spacecraft is None:
+        print("Warning: Cannot track camera to spacecraft - no spacecraft was created")
     
     # Add start/end markers
     if show_trajectory_path:
@@ -211,13 +240,16 @@ def animate_multiple_trajectories(
                     color=color
                 )
                 
-                # Animate trajectory growth with offset
-                animator.animate_trajectory_growth(trajectory_path, animation_frames)
+                # Extract time data for trajectory growth animation
+                positions, velocities, times, quaternions, angular_velocities = animator.extract_trajectory_data(trajectory_record)
+                
+                # Animate trajectory growth with variable timing support
+                animator.animate_trajectory_growth(trajectory_path, animation_frames, times)
                 animated_objects.append(trajectory_path)
             
             # Create and animate spacecraft
             if show_spacecraft:
-                positions, velocities, times = animator.extract_trajectory_data(trajectory_record)
+                positions, velocities, times, quaternions, angular_velocities = animator.extract_trajectory_data(trajectory_record)
                 
                 if positions is not None:
                     spacecraft = animator.create_spacecraft_object(
@@ -228,12 +260,14 @@ def animate_multiple_trajectories(
                     # Set spacecraft color
                     spacecraft.data.materials[0].node_tree.nodes["Principled BSDF"].inputs[0].default_value = color
                     
-                    # Animate spacecraft
+                    # Animate spacecraft with full rotational data
                     animator.animate_object_along_trajectory(
                         spacecraft, 
                         positions, 
                         velocities, 
                         times, 
+                        quaternions,
+                        angular_velocities,
                         animation_frames
                     )
                     animated_objects.append(spacecraft)
@@ -289,13 +323,15 @@ def create_comparison_animation(
         try:
             trajectory_record = get_trajectory(trajectory_id)
             if trajectory_record:
-                positions, velocities, times = animator.extract_trajectory_data(trajectory_record)
+                positions, velocities, times, quaternions, angular_velocities = animator.extract_trajectory_data(trajectory_record)
                 if positions is not None:
                     trajectory_data_list.append({
                         'id': trajectory_id,
                         'positions': positions,
                         'velocities': velocities,
                         'times': times,
+                        'quaternions': quaternions,
+                        'angular_velocities': angular_velocities,
                         'record': trajectory_record
                     })
         except Exception as e:
@@ -331,6 +367,8 @@ def create_comparison_animation(
             traj_data['positions'],
             traj_data['velocities'],
             traj_data['times'] if not sync_timing else None,  # Use None for synchronized timing
+            traj_data['quaternions'],
+            traj_data['angular_velocities'],
             animation_frames
         )
     
@@ -343,22 +381,108 @@ def create_comparison_animation(
     return True
 
 
+def test_variable_timing_animation(trajectory_id: int, animation_frames: int = 250):
+    """Test function to demonstrate variable timing animation capabilities."""
+    print(f"=== Testing Variable Timing Animation for Trajectory {trajectory_id} ===")
+    
+    # Setup scene
+    scene_manager = BlenderScene("VariableTimingTest")
+    scene_manager.setup_scene()
+    
+    # Setup animation manager
+    animator = AnimationManager(scale_factor=10)
+    animator.set_animation_range(1, animation_frames)
+    
+    # Load trajectory
+    from src.bioinspired.data.services import get_trajectory
+    trajectory_record = get_trajectory(trajectory_id)
+    if not trajectory_record:
+        print(f"Error: Trajectory with ID {trajectory_id} not found.")
+        return False
+    
+    # Extract trajectory data
+    positions, velocities, times, quaternions, angular_velocities = animator.extract_trajectory_data(trajectory_record)
+    
+    if positions is None:
+        print("Error: Could not extract trajectory data")
+        return False
+    
+    # Perform detailed timing analysis
+    timing_analysis = animator.analyze_timing_distribution(times, animation_frames)
+    print("\n=== Detailed Timing Analysis ===")
+    print(f"Type: {timing_analysis['type']}")
+    print(f"Message: {timing_analysis['message']}")
+    
+    if timing_analysis['type'] == 'variable':
+        print(f"Total data points: {timing_analysis['total_points']}")
+        print(f"Time duration: {timing_analysis['time_duration']:.3f}s")
+        print("Time step statistics:")
+        dt_stats = timing_analysis['dt_stats']
+        print(f"  - Mean: {dt_stats['mean']:.6f}s")
+        print(f"  - Std Dev: {dt_stats['std']:.6f}s")
+        print(f"  - Min: {dt_stats['min']:.6f}s")
+        print(f"  - Max: {dt_stats['max']:.6f}s")
+        print(f"  - Coefficient of Variation: {dt_stats['coefficient_of_variation']:.3f}")
+        
+        frame_dist = timing_analysis['frame_distribution']
+        print("Frame distribution:")
+        print(f"  - Min frame step: {frame_dist['min_frame_step']:.3f}")
+        print(f"  - Max frame step: {frame_dist['max_frame_step']:.3f}")
+        print(f"  - Mean frame step: {frame_dist['mean_frame_step']:.3f}")
+    
+    # Create spacecraft with variable timing
+    spacecraft = animator.create_spacecraft_object(
+        f"variable_timing_test_{trajectory_id}", 
+        size=20 * animator.scale_factor
+    )
+    
+    # Animate with variable timing
+    success = animator.animate_object_along_trajectory(
+        spacecraft, 
+        positions, 
+        velocities, 
+        times, 
+        quaternions,
+        angular_velocities,
+        animation_frames
+    )
+    
+    if success:
+        print("\n=== Animation Created Successfully ===")
+        print(f"Use frames 1-{animation_frames} to see the animation")
+        print("Press spacebar in Blender to play the animation")
+        
+        # Frame all objects
+        scene_manager.frame_all_objects()
+        return True
+    else:
+        print("\n=== Animation Failed ===")
+        return False
+
+
 def main():
     """Main function for interactive usage."""
     print("=== Blender Trajectory Animator ===")
     print("1. Animate single trajectory")
     print("2. Animate multiple trajectories")
     print("3. Create comparison animation")
+    print("4. Test variable timing animation")
     
-    choice = input("Enter choice (1/2/3): ").strip()
+    choice = input("Enter choice (1/2/3/4): ").strip()
     
-    if choice == "1":
+    if choice == "4":
+        trajectory_id = int(input("Enter trajectory ID for timing test: ").strip())
+        frames = int(input("Enter animation frames [250]: ").strip() or "250")
+        
+        success = test_variable_timing_animation(trajectory_id, frames)
+        
+    elif choice == "1":
         trajectory_id = int(input("Enter trajectory ID: ").strip())
         frames = int(input("Enter animation frames [250]: ").strip() or "250")
         
         show_path = input("Show trajectory path? (y/n) [y]: ").strip().lower() in ('y', 'yes', '')
         show_spacecraft = input("Show animated spacecraft? (y/n) [y]: ").strip().lower() in ('y', 'yes', '')
-        show_camera = input("Animate camera? (y/n) [n]: ").strip().lower() in ('y', 'yes')
+        show_camera = input("Animate camera? (y/n) [y]: ").strip().lower() in ('y', 'yes')
         
         success = animate_trajectory_from_database(
             trajectory_id, 
