@@ -1,0 +1,26 @@
+{
+  "spacecraft_name": "Lander 2",
+  "version": "1.0",
+  "mass": 1600000.0,
+  "inertia_tensor": [
+    [7.2e9, 0.0, 0.0],
+    [0.0, 7.2e9, 0.0],
+    [0.0, 0.0, 14.4e9]
+  ],
+  "center_of_mass": [0.0, 0.0, 0.0],
+  "metadata": {
+    "created_date": "2025-07-23",
+    "author": "Pascal Christiaanse",
+    "description": "Configuration file for Endurance spacecraft based on the movie Interstellar (2014)",
+    "units": {
+      "mass": "kg",
+      "length": "m",
+      "force": "N",
+      "time": "s",
+      "power": "W",
+      "temperature": "C",
+      "specific_impulse": "s",
+      "frequency": "Hz"
+    }
+  }
+}
