@@ -7,6 +7,7 @@ from tudatpy.astro.element_conversion import rotation_matrix_to_quaternion_entri
 
 # Import the bioinspired modules
 from bioinspired.simulation import EarthSimulator
+from bioinspired.simulation import EmptyUniverseSimulator
 from bioinspired.spacecraft import Lander2
 from bioinspired.data import (
     init_db,
@@ -17,6 +18,7 @@ from bioinspired.data import (
 )
 
 from bioinspired.controllers import MLPController
+from bioinspired.controllers import ConstantController
 
 
 def main():
@@ -31,37 +33,50 @@ def main():
 
     # Create simulation
     print("\n2. Creating simulation...")
-    simulator = EarthSimulator()
+    simulator = EmptyUniverseSimulator()
 
     # Save simulation to database
     print("\n3. Saving simulation to database...")
     sim_record = save_simulation(
         simulation=simulator,
-        simulation_type="EarthSimulator",
+        simulation_type="EmptyUniverseSimulator",
     )
     print(f"[OK] Simulation saved with ID: {sim_record.id}")
     print(f"  Type: {sim_record.simulation_type}")
 
     # Create and save spacecraft
     print("\n4. Creating and saving spacecraft...")
-    initial_state = np.array([6378e3, 0, 0, 0, 8e3, 0])  # Initial position (x, y, z)
+    initial_state = np.array([0, 0, 0, 0, 0, 0])  # Initial position (x, y, z)
     # Set initial rotation matrix (identity matrix)
     initial_rotation_matrix = np.eye(3)
-    initial_rotational_velocity = np.array([0.01, 0, 0])  # Initial angular velocity (omega_x, omega_y, omega_z)
+    initial_rotational_velocity = np.array(
+        [0.0, 0, 0]
+    )  # Initial angular velocity (omega_x, omega_y, omega_z)
     # Set initial orientation by converting a rotation matrix to a Tudat-compatible quaternion
-    initial_state_rotatation = rotation_matrix_to_quaternion_entries(initial_rotation_matrix)
+    initial_state_rotatation = rotation_matrix_to_quaternion_entries(
+        initial_rotation_matrix
+    )
     # Complete initial state by adding angular velocity vector (zero in this case)
-    initial_state = np.concatenate((initial_state, initial_state_rotatation, initial_rotational_velocity))
+    initial_state = np.concatenate(
+        (initial_state, initial_state_rotatation, initial_rotational_velocity)
+    )
     print(f"Initial state: {initial_state}")
-    
-    controller = MLPController(
-        hidden_sizes=[64, 64],  # Two hidden layers with 64 neurons each
-        output_size=3,  # Thrust vector in 3D space
+
+    # controller = MLPController(
+    #     hidden_sizes=[64, 64],  # Two hidden layers with 64 neurons each
+    #     output_size=28,  # Thrust vector in 3D space
+    #     simulator=simulator,
+    #     lander_name="Lander 2",
+    #     target_name="Lander 2",
+    # )
+    controller = ConstantController(
         simulator=simulator,
         lander_name="Lander 2",
         target_name="Lander 2",
     )
-    spacecraft = Lander2(initial_state=initial_state, simulation=simulator, controller=controller)
+    spacecraft = Lander2(
+        initial_state=initial_state, simulation=simulator, controller=controller
+    )
 
     craft_record = save_spacecraft(spacecraft=spacecraft, simulation_id=sim_record.id)
     print(f"[OK] Spacecraft saved with ID: {craft_record.id}")
@@ -93,7 +108,7 @@ def main():
     # Run simulation (simplified example)
     print("\n7. Running simulation...")
     # try:
-    dynamics_simulator = simulator.run(start_epoch=0.0, simulation_time=1000)
+    dynamics_simulator = simulator.run(start_epoch=0.0, simulation_time=100)
     print("[OK] Simulation completed successfully")
 
     # Update trajectory with completion info
