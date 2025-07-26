@@ -39,7 +39,7 @@ class EnduranceInterpolationErrorDesigner(InterpolationErrorDesigner):
 
     def __init__(
         self,
-        simulation_duration: float = 100.0,
+        simulation_duration: float = 150.0,
         initial_state: np.ndarray = None,
         interpolation_type: InterpolationType = InterpolationType.LAGRANGE,
         data_type: InterpolationDataType = InterpolationDataType.VECTOR,
@@ -132,11 +132,11 @@ def main():
     designer = EnduranceInterpolationErrorDesigner()
 
     # Define 3D parameter space
-    n_data_points_values = np.logspace(5, 10, num=6, dtype=int, base=2)
-    interpolation_orders = [4, 6, 8]
+    n_data_points_values = np.logspace(7, 11, num=5, dtype=int, base=2)
+    interpolation_orders = [6,8,10]
     interpolation_types = [
-        InterpolationType.LINEAR,
-        InterpolationType.CUBIC_SPLINE,
+        # InterpolationType.LINEAR,
+        # InterpolationType.CUBIC_SPLINE,
         InterpolationType.LAGRANGE,
     ]
 
@@ -149,12 +149,12 @@ def main():
                 parameter_display_name="Data Points",
                 parameter_units="points",
             ),
-            # ParameterSweepConfig(
-            #     parameter_name="interpolation_type",
-            #     parameter_values=interpolation_types,
-            #     parameter_display_name="Interpolation Type",
-            #     parameter_units="method",
-            # ),
+            ParameterSweepConfig(
+                parameter_name="interpolation_type",
+                parameter_values=interpolation_types,
+                parameter_display_name="Interpolation Type",
+                parameter_units="method",
+            ),
             ParameterSweepConfig(
                 parameter_name="interpolation_order",
                 parameter_values=interpolation_orders,
