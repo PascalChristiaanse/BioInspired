@@ -11,8 +11,6 @@ from typing import Dict, List, Any, Optional, Union
 from datetime import datetime
 from dataclasses import dataclass
 
-from .InteractivePlotter import create_interactive_plot
-
 
 def quaternion_angular_error(q1, q2):
     """Compute the angular error between two quaternions in radians."""
@@ -579,23 +577,3 @@ class ErrorDesignerBase(ABC):
         error_time_series = {k: v for k, v in error_time_series.items() if v}
 
         return error_time_series
-
-    # TODO: The following methods need to be redesigned to work with the new
-    # time-indexed error structure: Dict[str, Dict[str, Dict[float, float]]]
-    # They currently expect the old format: Dict[str, np.ndarray]
-
-    def plot_convergence_results(
-        self,
-        result: ErrorAnalysisResult,
-    ) -> None:
-        """Plot convergence results using interactive plotter.
-
-        Args:
-            result: ErrorAnalysisResult to plot
-            save_plot: Whether to save the plot
-            plot_title: Optional custom title
-            use_advanced_gui: Use advanced Tkinter GUI with dropdowns (default: True)
-        """
-
-        plotter = create_interactive_plot(result=result)
-        plotter.show()
