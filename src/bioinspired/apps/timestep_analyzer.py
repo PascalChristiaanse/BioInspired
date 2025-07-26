@@ -123,7 +123,7 @@ def run_simulation_with_timestep(
 
     # Run simulation
     start_time = time.perf_counter()
-    dynamics_simulator = simulator.run(start_epoch=0.0, simulation_time=simulation_time)
+    dynamics_simulator = simulator.run(start_epoch=0.0, end_epoch=simulation_time)
     runtime = time.perf_counter() - start_time
 
     # Extract final state
@@ -170,7 +170,7 @@ def create_benchmark_solution(simulation_time=50.0):
 
     # Run benchmark simulation
     start_time = time.perf_counter()
-    dynamics_simulator = simulator.run(start_epoch=0.0, simulation_time=simulation_time)
+    dynamics_simulator = simulator.run(start_epoch=0.0, end_epoch=simulation_time)
     benchmark_runtime = time.perf_counter() - start_time
 
     # Extract final state
@@ -962,7 +962,7 @@ def analyze_bulirsch_stoer_parameters(
                     # Run simulation
                     start_time = time.perf_counter()
                     dynamics_simulator = simulator.run(
-                        start_epoch=0.0, simulation_time=simulation_time
+                        start_epoch=0.0, end_epoch=simulation_time
                     )
                     runtime = time.perf_counter() - start_time
 
@@ -998,7 +998,7 @@ def analyze_bulirsch_stoer_parameters(
 
                         start_time_half = time.perf_counter()
                         dynamics_simulator_half = simulator_half.run(
-                            start_epoch=0.0, simulation_time=simulation_time
+                            start_epoch=0.0, end_epoch=simulation_time
                         )
                         runtime_half = time.perf_counter() - start_time_half
 
@@ -1241,7 +1241,7 @@ def analyze_bulirsch_stoer_variable_step_parameters(
                                 # Run simulation
                                 start_time = time.perf_counter()
                                 dynamics_simulator = simulator.run(
-                                    start_epoch=0.0, simulation_time=simulation_time
+                                    start_epoch=0.0, end_epoch=simulation_time
                                 )
                                 runtime = time.perf_counter() - start_time
 
@@ -1318,7 +1318,7 @@ def analyze_bulirsch_stoer_variable_step_parameters(
 
                                     start_time_hp = time.perf_counter()
                                     dynamics_simulator_hp = simulator_hp.run(
-                                        start_epoch=0.0, simulation_time=simulation_time
+                                        start_epoch=0.0, end_epoch=simulation_time
                                     )
                                     runtime_hp = time.perf_counter() - start_time_hp
 
@@ -1577,7 +1577,7 @@ def analyze_monte_carlo_sensitivity(
             # Run simulation
             start_time = time.perf_counter()
             dynamics_simulator = simulator.run(
-                start_epoch=0.0, simulation_time=simulation_time
+                start_epoch=0.0, end_epoch=simulation_time
             )
             runtime = time.perf_counter() - start_time
 
@@ -1616,7 +1616,7 @@ def analyze_monte_carlo_sensitivity(
 
                 start_time_half = time.perf_counter()
                 dynamics_simulator_half = simulator_half.run(
-                    start_epoch=0.0, simulation_time=simulation_time
+                    start_epoch=0.0, end_epoch=simulation_time
                 )
                 runtime_half = time.perf_counter() - start_time_half
 
