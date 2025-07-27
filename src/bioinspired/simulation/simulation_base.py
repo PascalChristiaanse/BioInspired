@@ -96,7 +96,7 @@ class SimulationBase(ABC):
             #     dependent_variable.total_acceleration("Delfi-C3"),
             # ],
         )
-        self._propagator.print_settings.print_initial_and_final_conditions = True
+        self._propagator.print_settings.print_initial_and_final_conditions = False
         return self._propagator
 
     def _get_termination_conditions(self):
@@ -190,9 +190,9 @@ class SimulationBase(ABC):
             }
         )
         # Create simulation object and propagate dynamics.
-        print(
-            f"Running simulation from {self._start_epoch} to {self._end_epoch} seconds."
-        )
-        print("Termination conditions:", self.dump_termination_conditions())
+        # print(
+        #     f"Running simulation from {self._start_epoch} to {self._end_epoch} seconds."
+        # )
+        # print("Termination conditions:", self.dump_termination_conditions())
 
         return create_dynamics_simulator(self.get_body_model(), self._get_propagators())
