@@ -7,9 +7,14 @@ import numpy as np
 from overrides import override
 from abc import ABC, abstractmethod
 
-
-from tudatpy.numerical_simulation.environment import SystemOfBodies
+from tudatpy.numerical_simulation.environment_setup import (
+    custom_rotation_model,
+    add_rotation_model,
+    custom_ephemeris,
+    create_body_ephemeris,
+)
 from tudatpy.numerical_simulation.propagation_setup import acceleration, propagator
+from tudatpy.numerical_simulation.environment import SystemOfBodies
 
 from numpy.polynomial.chebyshev import chebpts2
 
@@ -29,7 +34,6 @@ class EphemerisSpacecraftBase(SpacecraftBase):
         spacecraft: SpacecraftBase,
         initial_state,
         controller=None,
-        
     ):
         """Initialize the ephemeris spacecraft with a simulator and spacecraft class
         Args:
@@ -50,12 +54,15 @@ class EphemerisSpacecraftBase(SpacecraftBase):
                     "Initial state must be a 6-element vector representing position and velocity."
                 )
         super().__init__(
-            name=spacecraft.name+"Ephemeris",
+            name=spacecraft.name + "Ephemeris",
             simulation=simulator,
-            initial_state=initial_state[:6]
+            initial_state=initial_state[:6],
         )
         self._initial_state = initial_state
         self.controller = controller
+
+        self.orientation_interpolator = (None,)
+        self.translational_interpolator = (None,)
 
     def _create_chebychev_sampled_trajectory(self, start_epoch, end_epoch, n):
         """Create a Chebyshev sampled trajectory to be used in an interpolator.
@@ -88,7 +95,7 @@ class EphemerisSpacecraftBase(SpacecraftBase):
 
         chebyshev_states = {}
         chebyshev_states[start_epoch] = self._initial_state
-        for i in range(time_points.shape[0]-1):
+        for i in range(time_points.shape[0] - 1):
             dynamics_simulator = simulator.run(time_points[i], time_points[i + 1])
             state_history = dynamics_simulator.state_history
             final_time = max(state_history.keys())
@@ -122,16 +129,41 @@ class EphemerisSpacecraftBase(SpacecraftBase):
             end_epoch=self.simulator.end_epoch,
             n=self.simulator.n_chebyshev_points,
         )
-        
 
     def _insert_into_body_model(self) -> SystemOfBodies:
         """Return the body model object."""
-        if self._simulation.get_body_model().does_body_exist(self.name) is False:
-            self._simulation.get_body_model().create_empty_body(self.name)
+        body_model = self._simulation.get_body_model()
+        if body_model.does_body_exist(self.name) is False:
+            body_model.create_empty_body(self.name)
         else:
             raise ValueError(
                 f"Body with name {self.name} already exists in the body model."
             )
+
+        # Add custom ephemeris data to the body model
+
+        # Translation model settings for the spacecraft
+        translational_model_settings = custom_ephemeris(
+            self._state_function,
+            self.simulator.global_frame_origin,
+            self.simulator.global_frame_orientation,
+        )
+        ephemeris = create_body_ephemeris(translational_model_settings, self.name)
+        body_model.get(self.name).ephemeris = ephemeris
+
+        # Rotation model settings for the spacecraft
+        rotation_model_settings = custom_rotation_model(
+            self.simulator.global_frame_orientation,
+            self.name + "-Fixed",
+            self._rotation_matrix_function,
+            1e-2,
+        )
+        add_rotation_model(
+            body_model,
+            self.name,
+            rotation_model_settings,
+        )
+
         return self._simulation._body_model
 
     def _get_acceleration_settings(
@@ -145,3 +177,20 @@ class EphemerisSpacecraftBase(SpacecraftBase):
         """Return the propagator settings for the spacecraft."""
         # Create a propagator settings object for the spacecraft
         return []
+
+    def _rotation_matrix_function(self, time: float) -> np.ndarray:
+        """Computes the rotation matrix for the spacecraft at a given time based on the orientation interpolator."""
+        if self.orientation_interpolator is None:
+            raise ValueError("Orientation interpolator is not set.")
+
+        return self.orientation_interpolator.interpolate(time)
+
+    def _state_function(self, time: float) -> np.ndarray:
+        """Computes the state vector for the spacecraft at a given time based on the translational interpolator."""
+        if self.translational_interpolator is None:
+            raise ValueError("Translational interpolator is not set.")
+        return self.translational_interpolator.interpolate(time)
+
+    def _validate_interpolator(self, time):
+        """Checks if the interpolator is valid for the given time."""
+        pass
