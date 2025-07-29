@@ -108,7 +108,7 @@ def main():
     # Run simulation (simplified example)
     print("\n7. Running simulation...")
     # try:
-    dynamics_simulator = simulator.run(start_epoch=0.0, simulation_time=100)
+    dynamics_simulator = simulator.run(start_epoch=0.0, end_epoch=100)
     print("[OK] Simulation completed successfully")
 
     # Update trajectory with completion info
