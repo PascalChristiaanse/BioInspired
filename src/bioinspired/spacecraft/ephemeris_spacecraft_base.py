@@ -4,25 +4,27 @@ After an initial setup phase, the spacecraft will follow a predefined trajectory
 """
 
 import numpy as np
-from overrides import override
-from abc import ABC, abstractmethod
+from numpy.polynomial.chebyshev import chebpts2
 
 from tudatpy.numerical_simulation.environment_setup import (
-    custom_rotation_model,
+    rotation_model,
+    ephemeris,
     add_rotation_model,
-    custom_ephemeris,
     create_body_ephemeris,
 )
 from tudatpy.numerical_simulation.propagation_setup import acceleration, propagator
 from tudatpy.numerical_simulation.environment import SystemOfBodies
-
-from numpy.polynomial.chebyshev import chebpts2
+from tudatpy.astro.element_conversion import quaternion_entries_to_rotation_matrix
+from tudatpy.math.interpolators import (
+    lagrange_interpolation,
+    create_one_dimensional_vector_interpolator,
+)
 
 from .spacecraft_base import SpacecraftBase
 from .rotating_spacecraft_base import RotatingSpacecraftBase
 
 
-class EphemerisSpacecraftBase(SpacecraftBase):
+class EphemerisSpacecraft(SpacecraftBase):
     """Base class for spacecraft that follow a trajectory defined by ephemeris data.
 
     A simulator and spacecraft are provided to the constructor.
@@ -33,6 +35,8 @@ class EphemerisSpacecraftBase(SpacecraftBase):
         simulator,
         spacecraft: SpacecraftBase,
         initial_state,
+        n_datapoints=2048,
+        interpolator_order=10,
         controller=None,
     ):
         """Initialize the ephemeris spacecraft with a simulator and spacecraft class
@@ -46,7 +50,7 @@ class EphemerisSpacecraftBase(SpacecraftBase):
         if isinstance(spacecraft, RotatingSpacecraftBase):
             if initial_state.shape != (13,):
                 raise ValueError(
-                    "Initial state for rotating spacecraft must be a 13-element vector representing position, velocity, quaternion orientation, and euler angular velocity."
+                    "Initial state for rotating spacecraft must be either a 13-element vector (position, velocity, quaternion orientation, euler angular velocity)."
                 )
         else:
             if initial_state.shape != (6,):
@@ -54,15 +58,21 @@ class EphemerisSpacecraftBase(SpacecraftBase):
                     "Initial state must be a 6-element vector representing position and velocity."
                 )
         super().__init__(
-            name=spacecraft.name + "Ephemeris",
+            name=spacecraft.name + "-Ephemeris",
             simulation=simulator,
             initial_state=initial_state[:6],
         )
         self._initial_state = initial_state
         self.controller = controller
 
-        self.orientation_interpolator = (None,)
-        self.translational_interpolator = (None,)
+        # Determine if rotational state is available
+        self.has_rotational_state = len(initial_state) > 6
+
+        self.n_datapoints = n_datapoints
+        self.interpolator_order = interpolator_order
+        
+        self.orientation_interpolator = None
+        self.translational_interpolator = None
 
     def _create_chebychev_sampled_trajectory(self, start_epoch, end_epoch, n):
         """Create a Chebyshev sampled trajectory to be used in an interpolator.
@@ -117,7 +127,76 @@ class EphemerisSpacecraftBase(SpacecraftBase):
                 )
         return chebyshev_states
 
-    def generate_ephemeris(self):
+    def load_ephemeris(self, file_path: str = None):
+        """Load ephemeris data, either from file or by generating one.
+
+        Args:
+            file_path (str): Path to the ephemeris data file. If None, generates a new ephemeris.
+        """
+        if file_path is not None:
+            # Load ephemeris data from file
+            import pickle
+
+            with open(file_path, "rb") as f:
+                state_dict = pickle.load(f)
+        else:
+            # Generate ephemeris data
+            state_dict = self._generate_ephemeris_data()
+        # Create the ephemeris from the state dictionary
+        self._create_ephemeris(state_dict)
+    
+    def _format_file_name(self):
+        """Creates a file name for the ephemeris data based on the spacecraft name and current date."""
+        from datetime import datetime
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        return f"{self.spacecraft.name}_ephemeris_{timestamp}.pkl"    
+    
+    def save_ephemeris(self, file_path, file_name=None):
+        """Save the current ephemeris data to a file.
+
+        Args:
+            file_path (str): Path to the file where the ephemeris data will be saved.
+            file_name (str, optional): Name of the file to save the ephemeris data. If None, uses a default format.
+        """
+        # Implement saving logic here
+        import pickle
+
+        if file_name is None:
+            file_name = self._format_file_name()
+        full_path = f"{file_path}/{file_name}"
+
+        state_dict = self._generate_ephemeris_data()
+        with open(full_path, "wb") as f:
+            pickle.dump(state_dict, f)
+
+    def _create_ephemeris(self, state_dict=None):
+        """Create the ephemeris for the spacecraft."""
+        # Generate the ephemeris data
+        state_dict = self.generate_ephemeris_data()
+
+        # Translational interpolator
+        translational_settings = lagrange_interpolation(self.interpolator_order)
+        self.translational_interpolator = create_one_dimensional_vector_interpolator(
+            state_dict["translational_state"],
+            translational_settings,
+        )
+
+        # Orientation interpolator (only if rotational state is available)
+        if self.has_rotational_state and state_dict["orientation"] is not None:
+            try:
+                orientation_settings = lagrange_interpolation(self.interpolator_order)
+                self.orientation_interpolator = (
+                    create_one_dimensional_vector_interpolator(
+                        state_dict["orientation"],
+                        orientation_settings,
+                    )
+                )
+            except Exception as e:
+                print(f"Warning: Could not create orientation interpolator: {e}")
+                self.orientation_interpolator = None
+
+    def _generate_ephemeris_data(self):
         """Generate the ephemeris data for the spacecraft.
 
         Args:
@@ -127,8 +206,42 @@ class EphemerisSpacecraftBase(SpacecraftBase):
         samples = self._create_chebychev_sampled_trajectory(
             start_epoch=self.simulator.start_epoch,
             end_epoch=self.simulator.end_epoch,
-            n=self.simulator.n_chebyshev_points,
+            n=self.n_datapoints,
         )
+        state_dict = self._split_state(samples)
+        return state_dict
+
+    def _split_state(self, state):
+        """Split the state vector into position, velocity, and orientation components."""
+        position = {}
+        velocity = {}
+        translational_state = {}
+        orientation = {}
+        angular_velocity = {}
+
+        has_orientation_data = False
+
+        for time, values in state.items():
+            position[time] = values[:3]
+            velocity[time] = values[3:6]
+            translational_state[time] = np.concatenate([values[:3], values[3:6]])
+            if len(values) > 6:
+                orientation[time] = values[6:10]
+                angular_velocity[time] = values[10:13]
+                has_orientation_data = True
+
+        # Set to None if no orientation data was found
+        if not has_orientation_data:
+            orientation = None
+            angular_velocity = None
+
+        return {
+            "position": position,
+            "velocity": velocity,
+            "translational_state": translational_state,
+            "orientation": orientation,
+            "angular_velocity": angular_velocity,
+        }
 
     def _insert_into_body_model(self) -> SystemOfBodies:
         """Return the body model object."""
@@ -143,26 +256,32 @@ class EphemerisSpacecraftBase(SpacecraftBase):
         # Add custom ephemeris data to the body model
 
         # Translation model settings for the spacecraft
-        translational_model_settings = custom_ephemeris(
+        translational_model_settings = ephemeris.custom_ephemeris(
             self._state_function,
             self.simulator.global_frame_origin,
             self.simulator.global_frame_orientation,
         )
-        ephemeris = create_body_ephemeris(translational_model_settings, self.name)
-        body_model.get(self.name).ephemeris = ephemeris
+        translational_ephemeris = create_body_ephemeris(
+            translational_model_settings, self.name
+        )
+        body_model.get(self.name).ephemeris = translational_ephemeris
 
-        # Rotation model settings for the spacecraft
-        rotation_model_settings = custom_rotation_model(
-            self.simulator.global_frame_orientation,
-            self.name + "-Fixed",
-            self._rotation_matrix_function,
-            1e-2,
-        )
-        add_rotation_model(
-            body_model,
-            self.name,
-            rotation_model_settings,
-        )
+        # Rotation model settings for the spacecraft (only if rotational state is available)
+        try:
+            rotation_model_settings = rotation_model.custom_rotation_model(
+                self.simulator.global_frame_orientation,
+                self.name + "-Fixed",
+                self._rotation_matrix_function,
+                1e-2,
+            )
+            add_rotation_model(
+                body_model,
+                self.name,
+                rotation_model_settings,
+            )
+        except Exception as e:
+            print(f"Warning: Could not add rotation model for {self.name}: {e}")
+            # Continue without rotation model - spacecraft will use default orientation
 
         return self._simulation._body_model
 
@@ -179,18 +298,29 @@ class EphemerisSpacecraftBase(SpacecraftBase):
         return []
 
     def _rotation_matrix_function(self, time: float) -> np.ndarray:
-        """Computes the rotation matrix for the spacecraft at a given time based on the orientation interpolator."""
-        if self.orientation_interpolator is None:
-            raise ValueError("Orientation interpolator is not set.")
+        """Computes the rotation matrix for the spacecraft at a given time based on the orientation interpolator.
 
-        return self.orientation_interpolator.interpolate(time)
+        Returns an identity matrix if no orientation data is available.
+        """
+        if self.orientation_interpolator is None:
+            # Return 3x3 identity matrix when no rotational state is available
+            return np.eye(3)
+
+        try:
+            quaternion = self.orientation_interpolator.interpolate(time)
+            return quaternion_entries_to_rotation_matrix(quaternion)
+        except Exception as e:
+            print(f"Warning: Could not interpolate orientation at time {time}: {e}")
+            return np.eye(3)
 
     def _state_function(self, time: float) -> np.ndarray:
         """Computes the state vector for the spacecraft at a given time based on the translational interpolator."""
         if self.translational_interpolator is None:
             raise ValueError("Translational interpolator is not set.")
-        return self.translational_interpolator.interpolate(time)
 
-    def _validate_interpolator(self, time):
-        """Checks if the interpolator is valid for the given time."""
-        pass
+        try:
+            return self.translational_interpolator.interpolate(time)
+        except Exception as e:
+            raise ValueError(
+                f"Could not interpolate translational state at time {time}: {e}"
+            )
