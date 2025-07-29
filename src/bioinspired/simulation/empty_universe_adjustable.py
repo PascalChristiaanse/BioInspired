@@ -17,7 +17,7 @@ from tudatpy.numerical_simulation.environment_setup import (
 )
 
 from .simulation_base import SimulationBase
-from bioinspired.spacecraft import SimpleCraft
+
 
 
 class EmptyUniverseSimulatorAdjustable(SimulationBase):
@@ -101,6 +101,7 @@ class EmptyUniverseSimulatorAdjustable(SimulationBase):
 
 def main():
     """Main function to test the empty universe simulation."""
+    from bioinspired.spacecraft import SimpleCraft
     # Load spice kernels
     spice.load_standard_kernels()
 

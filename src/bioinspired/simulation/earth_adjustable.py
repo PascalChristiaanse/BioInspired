@@ -9,6 +9,7 @@ import json
 from overrides import override
 
 from tudatpy.interface import spice
+
 spice.load_standard_kernels()
 
 from tudatpy.numerical_simulation.environment import SystemOfBodies
@@ -20,7 +21,6 @@ from tudatpy.numerical_simulation.environment_setup import (
 )
 
 from .simulation_base import SimulationBase
-from bioinspired.spacecraft import SimpleCraft
 
 
 class EarthSimulatorAdjustable(SimulationBase):
@@ -40,7 +40,6 @@ class EarthSimulatorAdjustable(SimulationBase):
         self._coefficient_set = coefficient_set
         self._integrator_type = integrator_type
         super().__init__()
-        
 
     @override
     def _get_central_body(self) -> list[str]:
@@ -50,7 +49,6 @@ class EarthSimulatorAdjustable(SimulationBase):
     def get_body_model(self) -> SystemOfBodies:
         """Return the body model object."""
         if self._body_model is None:
-            
             # Create settings for celestial bodies
             body_settings = get_default_body_settings(
                 ["Earth"], self.global_frame_origin, self.global_frame_orientation
@@ -75,7 +73,7 @@ class EarthSimulatorAdjustable(SimulationBase):
                 self._integrator = integrator.bulirsch_stoer_fixed_step(
                     self._stepsize,
                     extrapolation_sequence=integrator.ExtrapolationMethodStepSequences.bulirsch_stoer_sequence,
-                    maximum_number_of_steps=6
+                    maximum_number_of_steps=6,
                 )
             elif self._integrator_type == "adams_bashforth_moulton":
                 self._integrator = integrator.adams_bashforth_moulton_fixed_step(
@@ -83,7 +81,7 @@ class EarthSimulatorAdjustable(SimulationBase):
                     relative_error_tolerance=1e-12,
                     absolute_error_tolerance=1e-12,
                     minimum_order=6,
-                    maximum_order=11
+                    maximum_order=11,
                 )
             else:
                 raise ValueError(f"Unknown integrator type: {self._integrator_type}")

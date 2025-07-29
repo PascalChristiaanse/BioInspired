@@ -17,7 +17,6 @@ from tudatpy.numerical_simulation.environment_setup import (
 )
 
 from .simulation_base import SimulationBase
-from bioinspired.spacecraft import SimpleCraft
 
 
 class EmptyUniverseSimulator(SimulationBase):
@@ -96,7 +95,6 @@ class EmptyUniverseSimulator(SimulationBase):
             }
         )
 
-
     @override
     def get_body_model(self) -> SystemOfBodies:
         """Return the body model object."""
@@ -114,6 +112,8 @@ class EmptyUniverseSimulator(SimulationBase):
 
 def main():
     """Main function to test the empty universe simulation."""
+    from bioinspired.spacecraft import SimpleCraft
+
     # Load spice kernels
     spice.load_standard_kernels()
 

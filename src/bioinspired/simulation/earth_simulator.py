@@ -21,7 +21,6 @@ from tudatpy.numerical_simulation.environment_setup import (
 )
 
 from .simulation_base import SimulationBase
-from bioinspired.spacecraft import SimpleCraft
 
 
 class EarthSimulator(SimulationBase):
