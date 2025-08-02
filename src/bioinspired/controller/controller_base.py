@@ -21,15 +21,11 @@ class ControllerBase(ABC):
         self.target_name = target_name
 
     @abstractmethod
-    def get_control_action(self):
+    def get_control_action(self, current_time):
         """Get the control action based on the control law implemented and the  current state of the simulation."""
         raise NotImplementedError("This method should be overridden by subclasses.")
 
-    def get_input_size(self) -> int:
-        """Return the size of the input state vector."""
-        return 36
-
-    def extract_state_vector(self) -> np.ndarray:
+    def extract_state_vector(self, current_time) -> np.ndarray:
         """
         Extracts a state vector from the simulation for neural net input.
 
@@ -42,11 +38,9 @@ class ControllerBase(ABC):
             lander_body.state if hasattr(lander_body, "state") else np.zeros(6)
         )
         state_vector = [*lander_state]
-
+    
         target_body = self.simulator.get_body_model().get(self.target_name)
-        target_state = (
-            target_body.state if hasattr(target_body, "state") else np.zeros(6)
-        )
+        target_state = target_body.ephemeris.cartesian_state(current_time)
         state_vector.extend(target_state)
 
         # target distance
@@ -70,16 +64,14 @@ class ControllerBase(ABC):
             cos_angle = np.clip(cos_angle, -1.0, 1.0)
             angular_separation = np.arccos(cos_angle)
         else:
-            angular_separation = [0.0, 0.0]
-        state_vector.extend(angular_separation)
+            angular_separation = 0.0
+        state_vector.append(angular_separation)
 
         # Difference in angular orientation using body_fixed_to_inertial_frame (rotation matrix or quaternion)
         lander_orientation = getattr(
             lander_body, "body_fixed_to_inertial_frame", np.zeros(9)
         )
-        target_orientation = getattr(
-            target_body, "body_fixed_to_inertial_frame", np.zeros(9)
-        )
+        target_orientation = target_body.rotation_model.body_fixed_to_inertial_rotation(current_time)
         orientation_diff = lander_orientation - target_orientation
         state_vector.extend(orientation_diff.flatten())
 
@@ -87,10 +79,8 @@ class ControllerBase(ABC):
         lander_angular_rate = getattr(
             lander_body, "body_fixed_to_inertial_frame_derivative", np.zeros(9)
         )
-        target_angular_rate = getattr(
-            target_body, "body_fixed_to_inertial_frame_derivative", np.zeros(9)
-        )
+        target_angular_rate = target_body.rotation_model.time_derivative_body_fixed_to_inertial_rotation(current_time)
         angular_rate_diff = lander_angular_rate - target_angular_rate
         state_vector.extend(angular_rate_diff.flatten())
-
+        return np.zeros(36) 
         return np.array(state_vector)

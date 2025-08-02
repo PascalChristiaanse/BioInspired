@@ -11,7 +11,7 @@ from tudatpy.astro.element_conversion import rotation_matrix_to_quaternion_entri
 # Import the bioinspired modules
 from bioinspired.simulation import EmptyUniverseSimulator
 from bioinspired.spacecraft import Lander2
-from bioinspired.controllers import ConstantController
+from bioinspired.controller import ConstantController
 
 
 def create_initial_state():

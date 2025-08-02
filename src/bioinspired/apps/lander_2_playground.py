@@ -17,8 +17,8 @@ from bioinspired.data import (
     update_trajectory_status,
 )
 
-from bioinspired.controllers import MLPController
-from bioinspired.controllers import ConstantController
+from bioinspired.controller import MLPController
+from bioinspired.controller import ConstantController
 
 
 def main():

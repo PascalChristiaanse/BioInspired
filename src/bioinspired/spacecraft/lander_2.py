@@ -20,7 +20,7 @@ from .propelled_spacecraft_base import PropelledSpacecraftBase
 from .rotating_spacecraft_base import RotatingSpacecraftBase
 from .JSON_spacecraft_base import JSONSpacecraftBase
 
-from bioinspired.controllers import ControllerBase
+from bioinspired.controller import ControllerBase
 
 
 @jit(nopython=True, cache=True)
@@ -157,9 +157,10 @@ class Lander2(RotatingSpacecraftBase, PropelledSpacecraftBase, JSONSpacecraftBas
     def get_thrust_vector(self, current_time: float) -> np.ndarray:
         """Calculate the thrust based on the control vector.
         Computed through sum of the forces due to RCS thrusters."""
-
-        control_vector = self.controller.get_control_action()
-
+        if (current_time != current_time):
+            return np.zeros((3, 1))
+        control_vector = self.controller.get_control_action(current_time)
+        
         # Use JIT-compiled function for performance
         if self._engine_directions_array is not None:
             return _compute_thrust_vector_jit(
@@ -181,7 +182,7 @@ class Lander2(RotatingSpacecraftBase, PropelledSpacecraftBase, JSONSpacecraftBas
     def get_torque_vector(self, current_time: float) -> np.ndarray:
         """Calculate the torque vector based on the control vector.
         Computed through sum of the moments due to RCS thrusters, computed using the cross product of the engine positions and thrust vectors."""
-        control_vector = self.controller.get_control_action()
+        control_vector = self.controller.get_control_action(current_time)
 
         # Use JIT-compiled function for performance
         if self._engine_positions_array is not None:

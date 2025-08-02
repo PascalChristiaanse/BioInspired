@@ -5,7 +5,7 @@ This module provides a constant controller for spacecraft, which applies a fixed
 from overrides import override
 import numpy as np
 
-from bioinspired.controllers.controller_base import ControllerBase
+from bioinspired.controller.controller_base import ControllerBase
 
 
 class ConstantController(ControllerBase):
@@ -33,6 +33,6 @@ class ConstantController(ControllerBase):
 
 
     @override
-    def get_control_action(self) -> np.ndarray:
+    def get_control_action(self, current_time) -> np.ndarray:
         """Return a constant control action."""
         return self._control_vector

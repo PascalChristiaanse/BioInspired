@@ -21,7 +21,7 @@ from bioinspired.simulation import EmptyUniverseSimulatorAdjustable
 from bioinspired.simulation import EarthSimulatorAdjustable
 from bioinspired.spacecraft import Lander2
 from bioinspired.spacecraft import SimpleCraft
-from bioinspired.controllers import ConstantController
+from bioinspired.controller import ConstantController
 
 
 def quaternion_angular_error(q1, q2):
