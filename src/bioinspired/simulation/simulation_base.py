@@ -22,7 +22,10 @@ class SimulationBase(ABC):
     required methods.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        dependent_variables_list = [],
+    ):
         self._start_epoch: float = 0.0  # Start epoch of the simulation
         self._end_epoch: float = 100.0  # End epoch of the simulation
 
@@ -42,6 +45,8 @@ class SimulationBase(ABC):
         self._custom_termination_list: list[
             propagator.PropagationTerminationSettings
         ] = []
+
+        self._dependent_variables = dependent_variables_list
 
     @abstractmethod
     def _get_central_body(self) -> list[str]:
@@ -92,9 +97,7 @@ class SimulationBase(ABC):
             self._get_integrator(),
             self._start_epoch,
             self._get_termination_conditions(),
-            # output_variables=[
-            #     dependent_variable.total_acceleration("Delfi-C3"),
-            # ],
+            output_variables=self._dependent_variables,
         )
         self._propagator.print_settings.print_initial_and_final_conditions = False
         return self._propagator

@@ -30,10 +30,11 @@ class EmptyUniverseSimulator(SimulationBase):
         self,
         tolerance: float = 1e-6,
         initial_timestep: float = 0.1,
+        **kwargs,
     ):
         self._tolerance = tolerance
         self._initial_timestep = initial_timestep
-        super().__init__()
+        super().__init__(**kwargs)
 
     @override
     def _get_central_body(self) -> list[str]:
@@ -56,7 +57,7 @@ class EmptyUniverseSimulator(SimulationBase):
 
             # Create step size validation settings
             step_size_validation = integrator.step_size_validation(
-                minimum_step=1e-4, maximum_step=10000
+                minimum_step=1e-4, maximum_step=1
             )
 
             self._integrator = integrator.bulirsch_stoer_variable_step(
