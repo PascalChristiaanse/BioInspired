@@ -4,6 +4,7 @@ After an initial setup phase, the spacecraft will follow a predefined trajectory
 """
 
 import numpy as np
+from overrides import override
 from numpy.polynomial.chebyshev import chebpts2
 
 from tudatpy.numerical_simulation.environment_setup import (
@@ -33,7 +34,7 @@ class EphemerisSpacecraft(SpacecraftBase):
     def __init__(
         self,
         simulator,
-        spacecraft: SpacecraftBase,
+        spacecraft_class: type[SpacecraftBase],
         initial_state,
         n_datapoints=2048,
         interpolator_order=10,
@@ -42,12 +43,12 @@ class EphemerisSpacecraft(SpacecraftBase):
         """Initialize the ephemeris spacecraft with a simulator and spacecraft class
         Args:
             simulator (SimulationBase): The simulation environment.
-            spacecraft (SpacecraftBase): The spacecraft to be used in the simulation.
+            spacecraft_class (type[SpacecraftBase]): The spacecraft class to be used in the simulation.
         """
         self.simulator = simulator
-        self.spacecraft = spacecraft
-        # Check if spacecraft is or inherits from RotatingSpacecraftBase
-        if isinstance(spacecraft, RotatingSpacecraftBase):
+        self.spacecraft_class = spacecraft_class
+        # Check if spacecraft class is or inherits from RotatingSpacecraftBase
+        if issubclass(spacecraft_class, RotatingSpacecraftBase):
             if initial_state.shape != (13,):
                 raise ValueError(
                     "Initial state for rotating spacecraft must be either a 13-element vector (position, velocity, quaternion orientation, euler angular velocity)."
@@ -58,7 +59,7 @@ class EphemerisSpacecraft(SpacecraftBase):
                     "Initial state must be a 6-element vector representing position and velocity."
                 )
         super().__init__(
-            name=spacecraft.name + "-Ephemeris",
+            name=spacecraft_class.__name__ + "-Ephemeris",
             simulation=simulator,
             initial_state=initial_state[:6],
         )
@@ -85,19 +86,18 @@ class EphemerisSpacecraft(SpacecraftBase):
         """
 
         # Create Chebyshev points
-        chebyshev_points = chebpts2(n)
-        # Scale points to the epoch range
+        chebyshev_points = chebpts2(n)        # Scale points to the epoch range
         time_points = (
             0.5 * (end_epoch - start_epoch) * (chebyshev_points + 1) + start_epoch
         )
 
         simulator = type(self.simulator)()
-        if self.controller is not None:
-            spacecraft = type(self.spacecraft)(
+        if self.controller is None:
+            spacecraft = self.spacecraft_class(
                 simulation=simulator, initial_state=self._initial_state
             )
         else:
-            spacecraft = type(self.spacecraft)(
+            spacecraft = self.spacecraft_class(
                 simulation=simulator,
                 initial_state=self._initial_state,
                 controller=self.controller,
@@ -115,12 +115,12 @@ class EphemerisSpacecraft(SpacecraftBase):
             del dynamics_simulator, spacecraft, simulator
 
             simulator = type(self.simulator)()
-            if self.controller is not None:
-                spacecraft = type(self.spacecraft)(
+            if self.controller is None:
+                spacecraft = self.spacecraft_class(
                     simulation=simulator, initial_state=final_state
                 )
             else:
-                spacecraft = type(self.spacecraft)(
+                spacecraft = self.spacecraft_class(
                     simulation=simulator,
                     initial_state=final_state,
                     controller=self.controller,
@@ -150,7 +150,7 @@ class EphemerisSpacecraft(SpacecraftBase):
         from datetime import datetime
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        return f"{self.spacecraft.name}_ephemeris_{timestamp}.pkl"    
+        return f"{self.spacecraft_class.__name__}_ephemeris_{timestamp}.pkl"
     
     def save_ephemeris(self, file_path, file_name=None):
         """Save the current ephemeris data to a file.
@@ -173,7 +173,7 @@ class EphemerisSpacecraft(SpacecraftBase):
     def _create_ephemeris(self, state_dict=None):
         """Create the ephemeris for the spacecraft."""
         # Generate the ephemeris data
-        state_dict = self.generate_ephemeris_data()
+        state_dict = self._generate_ephemeris_data()
 
         # Translational interpolator
         translational_settings = lagrange_interpolation(self.interpolator_order)
@@ -204,9 +204,9 @@ class EphemerisSpacecraft(SpacecraftBase):
         """
         # Check if the provided spacecraft is an instance of RotatingSpacecraftBase
         samples = self._create_chebychev_sampled_trajectory(
-            start_epoch=self.simulator.start_epoch,
-            end_epoch=self.simulator.end_epoch,
-            n=self.n_datapoints,
+            start_epoch=self.simulator._start_epoch,
+            end_epoch=self.simulator._end_epoch+50,
+            n=self.n_datapoints*1.5,
         )
         state_dict = self._split_state(samples)
         return state_dict
@@ -285,6 +285,7 @@ class EphemerisSpacecraft(SpacecraftBase):
 
         return self._simulation._body_model
 
+    @override
     def _get_acceleration_settings(
         self,
     ) -> dict[str, dict[str, list[acceleration.AccelerationSettings]]]:
