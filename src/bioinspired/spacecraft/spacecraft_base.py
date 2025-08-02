@@ -9,6 +9,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 
 from tudatpy.numerical_simulation.environment import SystemOfBodies
+from tudatpy.interface.spice import check_body_property_in_kernel_pool
 from tudatpy.numerical_simulation.propagation_setup import (
     acceleration,
     create_acceleration_models,
@@ -81,6 +82,8 @@ class SpacecraftBase(ABC):
         acceleration_dict = {}
         for body in self._simulation.get_body_model().list_of_bodies():
             if body == self.name:
+                continue
+            if check_body_property_in_kernel_pool(body, "GM") is False:
                 continue
             acceleration_dict[body] = [acceleration.point_mass_gravity()]
 
