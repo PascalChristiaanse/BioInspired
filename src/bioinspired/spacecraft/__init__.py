@@ -12,7 +12,7 @@ from .endurance import Endurance
 from .spacecraft_base import SpacecraftBase
 from .rotating_spacecraft_base import RotatingSpacecraftBase
 from .JSON_spacecraft_base import JSONSpacecraftBase
-from .ephemeris_spacecraft_base import EphemerisSpacecraft
+from .ephemeris_spacecraft import EphemerisSpacecraft
 
 __all__ = [
     "SimpleCraft",
