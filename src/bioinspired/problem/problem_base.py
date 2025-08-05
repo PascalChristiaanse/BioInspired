@@ -1,6 +1,12 @@
 """Problem base class for PyGMO problems.
 """
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bioinspired.problem import CostFunctionBase
+
 from abc import ABC, abstractmethod
 
 
@@ -9,8 +15,9 @@ class ProblemBase(ABC):
     This class provides a common interface for problems in the bioinspired domain.
     It can be extended to implement specific problems like the automatic rendezvous and docking (AR&D) problem.
     """
-    def __init__(self):
+    def __init__(self, cost_function: CostFunctionBase):
         super().__init__()
+        self.cost_function = cost_function
         
     @abstractmethod
     def fitness(self, x):
