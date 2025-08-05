@@ -24,7 +24,7 @@ class SimulationBase(ABC):
 
     def __init__(
         self,
-        dependent_variables_list = [],
+        dependent_variables_list=[],
     ):
         self._start_epoch: float = 0.0  # Start epoch of the simulation
         self._end_epoch: float = 100.0  # End epoch of the simulation
@@ -47,6 +47,13 @@ class SimulationBase(ABC):
         ] = []
 
         self._dependent_variables = dependent_variables_list
+
+    def add_dependent_variable(
+        self, variable: dependent_variable.SingleDependentVariableSaveSettings
+    ):
+        """Add a dependent variable to the simulation."""
+        if variable not in self._dependent_variables:
+            self._dependent_variables.append(variable)
 
     @abstractmethod
     def _get_central_body(self) -> list[str]:
