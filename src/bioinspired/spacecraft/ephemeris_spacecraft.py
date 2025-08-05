@@ -72,9 +72,13 @@ class EphemerisSpacecraft(SpacecraftBase):
 
         self.n_datapoints = n_datapoints
         self.interpolator_order = interpolator_order
-        
+
         self.orientation_interpolator = None
         self.translational_interpolator = None
+
+        self._current_orientation = quaternion_entries_to_rotation_matrix(
+            self._initial_state[6:10]
+        )
 
     def _create_chebychev_sampled_trajectory(self, start_epoch, end_epoch, n):
         """Create a Chebyshev sampled trajectory to be used in an interpolator.
@@ -87,7 +91,7 @@ class EphemerisSpacecraft(SpacecraftBase):
         """
 
         # Create Chebyshev points
-        chebyshev_points = chebpts2(n)        # Scale points to the epoch range
+        chebyshev_points = chebpts2(n)  # Scale points to the epoch range
         time_points = (
             0.5 * (end_epoch - start_epoch) * (chebyshev_points + 1) + start_epoch
         )
@@ -145,14 +149,14 @@ class EphemerisSpacecraft(SpacecraftBase):
             state_dict = self._generate_ephemeris_data()
         # Create the ephemeris from the state dictionary
         self._create_ephemeris(state_dict)
-    
+
     def _format_file_name(self):
         """Creates a file name for the ephemeris data based on the spacecraft name and current date."""
         from datetime import datetime
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         return f"{self.spacecraft_class.__name__}_ephemeris_{timestamp}.pkl"
-    
+
     def save_ephemeris(self, file_path, file_name=None):
         """Save the current ephemeris data to a file.
 
@@ -212,8 +216,8 @@ class EphemerisSpacecraft(SpacecraftBase):
         # Check if the provided spacecraft is an instance of RotatingSpacecraftBase
         samples = self._create_chebychev_sampled_trajectory(
             start_epoch=self.simulator._start_epoch,
-            end_epoch=self.simulator._end_epoch+50,
-            n=self.n_datapoints*1.5,
+            end_epoch=self.simulator._end_epoch + 50,
+            n=self.n_datapoints * 1.5,
         )
         state_dict = self._split_state(samples)
         return state_dict
@@ -292,6 +296,14 @@ class EphemerisSpacecraft(SpacecraftBase):
 
         return self._simulation._body_model
 
+    def get_orientation(self) -> np.ndarray:
+        """Get the orientation of the spacecraft at a given time.
+
+        Returns:
+            np.ndarray: Orientation matrix of size 9 body-fixed to inertial frame.
+        """
+        return self._current_orientation.flatten()
+
     @override
     def _get_acceleration_settings(
         self,
@@ -316,7 +328,10 @@ class EphemerisSpacecraft(SpacecraftBase):
 
         try:
             quaternion = self.orientation_interpolator.interpolate(time)
-            return quaternion_entries_to_rotation_matrix(quaternion)
+            self._current_orientation = quaternion_entries_to_rotation_matrix(
+                quaternion
+            )
+            return self._current_orientation
         except Exception as e:
             print(f"Warning: Could not interpolate orientation at time {time}: {e}")
             return np.eye(3)

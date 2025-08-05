@@ -107,6 +107,12 @@ class Lander2(RotatingSpacecraftBase, PropelledSpacecraftBase, JSONSpacecraftBas
                 [engine["location"] for engine in self._engines]  # pylint: disable=no-member
             )
 
+    def get_orientation(self) -> np.ndarray:
+        """Get the orientation of the Lander 2 spacecraft."""
+        body_model = self._simulation.get_body_model().get(self.name)
+        if hasattr(body_model, "body_fixed_to_inertial_frame"):
+            return np.array(body_model.body_fixed_to_inertial_frame).flatten()
+
     @property
     @override
     def Isp(self) -> float:
