@@ -19,6 +19,7 @@ from tudatpy.astro.element_conversion import quaternion_entries_to_rotation_matr
 from tudatpy.math.interpolators import (
     lagrange_interpolation,
     create_one_dimensional_vector_interpolator,
+    BoundaryInterpolationType,
 )
 
 from .spacecraft_base import SpacecraftBase
@@ -176,7 +177,10 @@ class EphemerisSpacecraft(SpacecraftBase):
         state_dict = self._generate_ephemeris_data()
 
         # Translational interpolator
-        translational_settings = lagrange_interpolation(self.interpolator_order)
+        translational_settings = lagrange_interpolation(
+            self.interpolator_order,
+            boundary_interpolation=BoundaryInterpolationType.use_boundary_value,
+        )
         self.translational_interpolator = create_one_dimensional_vector_interpolator(
             state_dict["translational_state"],
             translational_settings,
@@ -185,7 +189,10 @@ class EphemerisSpacecraft(SpacecraftBase):
         # Orientation interpolator (only if rotational state is available)
         if self.has_rotational_state and state_dict["orientation"] is not None:
             try:
-                orientation_settings = lagrange_interpolation(self.interpolator_order)
+                orientation_settings = lagrange_interpolation(
+                    self.interpolator_order,
+                    boundary_interpolation=BoundaryInterpolationType.use_boundary_value,
+                )
                 self.orientation_interpolator = (
                     create_one_dimensional_vector_interpolator(
                         state_dict["orientation"],
