@@ -95,11 +95,15 @@ class BasicController(MLPController):
         )
         target_z_angle = rotation_matrix_to_euler_angles(target_orientation)[2]
         z_angle_diff = target_z_angle - lander_z_angle
-        
+
         lander_angular_rate = getattr(
             lander_body, "inertial_to_body_fixed_frame", np.zeros(3)
         )
-        target_angular_rate = target_body.rotation_model.time_derivative_body_fixed_to_inertial_rotation(current_time)
+        target_angular_rate = (
+            target_body.rotation_model.time_derivative_body_fixed_to_inertial_rotation(
+                current_time
+            )
+        )
         z_rate_diff = (lander_angular_rate[2] - target_angular_rate[2])[2]
 
         return np.array(
@@ -126,18 +130,25 @@ class BasicProblem(ProblemBase):
     """Basic problem class for the automatic rendezvous and docking (AR&D) problem."""
 
     def __init__(self):
-        super().__init__()
+        super().__init__(JLeitner2010NoStopNeuron())
         self.simulator = EmptyUniverseSimulator(
             dependent_variables_list=[
-                dependent_variable.relative_position("Lander 2", "Endurance-Ephemeris"),
-                dependent_variable.custom_dependent_variable(test, 3),
-            ]
+                dependent_variable.relative_distance("Lander 2", "Endurance-Ephemeris"),
+                dependent_variable.relative_speed("Lander 2", "Endurance-Ephemeris"),
+            ],
+            initial_timestep=0.1,
         )
 
         self.endurance = EphemerisSpacecraft(
             self.simulator,
             Endurance,
-            np.array([200, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]),
+            np.array([25, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]),
+        )
+
+        self.simulator.add_dependent_variable(
+            dependent_variable.custom_dependent_variable(
+                self.endurance.get_orientation, 9
+            )
         )
 
         self.endurance.load_ephemeris()
@@ -163,22 +174,64 @@ class BasicProblem(ProblemBase):
             controller=self.controller,
         )
 
-        self.cost_function = JLeitner2010NoStopNeuron()
-
-    def fitness(self, x):
+    def fitness(self, design):
         """Evaluate the fitness of a solution."""
-        dynamics_simulator = self.simulator.run(0, 100)
-        history = create_dependent_variable_dictionary(dynamics_simulator)
-        test_history = history[dependent_variable.custom_dependent_variable(test, 3)]
-        print(test_history)
+        # Set controller weights from the design parameter
+        if design is not None:
+            self.controller.set_weights(design)
+        
+        dynamics_simulator = self.simulator.run(0, 10)
+
+        spacecraft_orientation_history = {}
+        for time, state in dynamics_simulator.state_history.items():
+            spacecraft_orientation_history[time] = (
+                quaternion_entries_to_rotation_matrix(state[6:10])
+            )
+
+        endurance_orientation_history = {}
+        relative_distance = {}
+        relative_speed = {}
+        for time, vars in dynamics_simulator.propagation_results.dependent_variable_history.items():
+            relative_distance[time] = vars[0]
+            relative_speed[time] = vars[1]
+            endurance_orientation_history[time] = vars[2:11].reshape(3, 3)
+
+        return -1 * self.cost_function.cost(
+            {
+                "relative_distance": relative_distance,
+                "relative_speed": relative_speed,
+                "orientation_matrix_A": spacecraft_orientation_history,
+                "orientation_matrix_B": endurance_orientation_history,
+            }
+        )
 
     def get_bounds(self):
         return np.array([0, 0])
 
 
 def main():
+    # Set seed for reproducible results
+    np.random.seed(42)
+    
     problem = BasicProblem()
-    print("Fitness:", problem.fitness(None))
+    
+    # Get the number of parameters needed for the controller
+    controller = problem.controller
+    num_params = len(controller.get_weights())
+    print(f"Controller requires {num_params} parameters")
+    
+    # Generate reproducible random weights
+    random_weights = np.random.randn(num_params) * 0.1  # Small initial weights
+    
+    # Set the weights in the controller
+    controller.set_weights(random_weights)
+    print("Set randomized weights with seed 42")
+    
+    # Evaluate fitness with the seeded random weights
+    fitness_value = problem.fitness(None)
+    print(f"Fitness with seeded random weights: {fitness_value}")
+    
+    return problem, fitness_value
 
 
 if __name__ == "__main__":
