@@ -54,12 +54,16 @@ class MLPController(nn.Module, ControllerBase):
 
     def set_weights(self, flat_weights):
         """Sets weights from a flat tensor (for evolutionary algorithms)."""
+        if not isinstance(flat_weights, torch.Tensor):
+            flat_weights = torch.tensor(flat_weights, dtype=torch.float32)
+            
         pointer = 0
         for p in self.parameters():
             numel = p.data.numel()
             p.data.copy_(flat_weights[pointer : pointer + numel].view_as(p.data))
-            pointer += numel @ override
+            pointer += numel
 
+    @override
     def get_control_action(self, current_time):
         """Get the control action based on the current state of the simulation."""
         state_vector = self.extract_state_vector(current_time)
