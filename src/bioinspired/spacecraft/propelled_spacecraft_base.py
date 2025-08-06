@@ -119,7 +119,7 @@ class PropelledSpacecraftBase(SpacecraftBase):
         """Compiles the acceleration model for the spacecraft.
         This method should be implemented by subclasses to return the specific acceleration settings.
         """
-        print("Compiling acceleration settings for propelled spacecraft...")
+        # print("Compiling acceleration settings for propelled spacecraft...")
         self._acceleration_settings = super()._get_acceleration_settings()
         # Add thrust from the engine model
         self._acceleration_settings[self.name][self.name] = [

@@ -217,6 +217,6 @@ class Lander2(RotatingSpacecraftBase, PropelledSpacecraftBase, JSONSpacecraftBas
         self,
     ) -> dict[str, dict[str, list[acceleration.AccelerationSettings]]]:
         """Compiles the acceleration model for point mass gravity from all bodies on the spacecraft, and adds RCS thrusters."""
-        print("Compiling acceleration settings for Lander 2 spacecraft...")
+        # print("Compiling acceleration settings for Lander 2 spacecraft...")
         self._acceleration_settings = super()._get_acceleration_settings()
         return self._acceleration_settings
