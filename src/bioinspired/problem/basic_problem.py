@@ -132,7 +132,11 @@ class BasicProblem(ProblemBase):
 
     def __init__(self):
         super().__init__(JLeitner2010NoStopNeuron())
-        self.simulator = EmptyUniverseSimulator(
+        # Make the problem stateless - no instance variables to store objects
+
+    def _create_simulator_components(self):
+        """Create fresh simulator components for each evaluation."""
+        simulator = EmptyUniverseSimulator(
             dependent_variables_list=[
                 dependent_variable.relative_distance("Lander 2", "Endurance-Ephemeris"),
                 dependent_variable.relative_speed("Lander 2", "Endurance-Ephemeris"),
@@ -140,19 +144,17 @@ class BasicProblem(ProblemBase):
             initial_timestep=0.1,
         )
 
-        self.endurance = EphemerisSpacecraft(
-            self.simulator,
+        endurance = EphemerisSpacecraft(
+            simulator,
             Endurance,
             np.array([25, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]),
         )
 
-        self.simulator.add_dependent_variable(
-            dependent_variable.custom_dependent_variable(
-                self.endurance.get_orientation, 9
-            )
+        simulator.add_dependent_variable(
+            dependent_variable.custom_dependent_variable(endurance.get_orientation, 9)
         )
 
-        self.endurance.load_ephemeris()
+        endurance.load_ephemeris()
 
         translational_state = np.array([0, 0, 0, 0, 0, 0])  # Initial position (x, y, z)
         orientation = np.eye(3)
@@ -163,25 +165,31 @@ class BasicProblem(ProblemBase):
             (translational_state, orientation_matrix, angular_velocity)
         )
 
-        self.controller = BasicController(
-            simulator=self.simulator,
+        controller = BasicController(
+            simulator=simulator,
             lander_name="Lander 2",
             target_name="Endurance-Ephemeris",
         )
 
-        self.spacecraft = Lander2(
+        spacecraft = Lander2(
             initial_state=initial_state,
-            simulation=self.simulator,
-            controller=self.controller,
+            simulation=simulator,
+            controller=controller,
         )
+
+        return simulator, endurance, controller, spacecraft
 
     def fitness(self, design):
         """Evaluate the fitness of a solution."""
-        # Set controller weights from the design parameter
-        if design is not None:
-            self.controller.set_weights(design)
+        # Create fresh components for each evaluation
+        simulator, endurance, controller, spacecraft = (
+            self._create_simulator_components()
+        )
 
-        dynamics_simulator = self.simulator.run(0, 10)
+        if design is not None:
+            controller.set_weights(design)
+
+        dynamics_simulator = simulator.run(0, 10)
 
         spacecraft_orientation_history = {}
         for time, state in dynamics_simulator.state_history.items():
@@ -230,19 +238,16 @@ def main():
     problem = BasicProblem()
 
     # Get the number of parameters needed for the controller
-    controller = problem.controller
+    # Create temporary components to get controller info
+    _, _, controller, _ = problem._create_simulator_components()
     num_params = len(controller.get_weights())
     print(f"Controller requires {num_params} parameters")
 
     # Generate reproducible random weights
     random_weights = np.random.randn(num_params) * 0.1  # Small initial weights
 
-    # Set the weights in the controller
-    controller.set_weights(random_weights)
-    print("Set randomized weights with seed 42")
-
     # Evaluate fitness with the seeded random weights
-    fitness_value = problem.fitness(None)
+    fitness_value = problem.fitness(random_weights)
     print(f"Fitness with seeded random weights: {fitness_value}")
 
     return problem, fitness_value
