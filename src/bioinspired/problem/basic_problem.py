@@ -200,7 +200,7 @@ class BasicProblem(ProblemBase):
             relative_speed[time] = vars[1]
             endurance_orientation_history[time] = vars[2:11].reshape(3, 3)
 
-        return -1 * self.cost_function.cost(
+        cost = self.cost_function.cost(
             {
                 "relative_distance": relative_distance,
                 "relative_speed": relative_speed,
@@ -208,6 +208,7 @@ class BasicProblem(ProblemBase):
                 "orientation_matrix_B": endurance_orientation_history,
             }
         )
+        return [-1 * cost]
 
     def get_bounds(self):
         """Get bounds for 92 neural network parameters."""
