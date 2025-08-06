@@ -210,7 +210,16 @@ class BasicProblem(ProblemBase):
         )
 
     def get_bounds(self):
-        return np.array([0, 0])
+        """Get bounds for 92 neural network parameters."""
+        # Create a temporary controller to get the number of parameters
+        simulator, _, controller, _ = self._create_simulator_components()
+        num_params = len(controller.get_weights())
+
+        # Set reasonable bounds for neural network weights
+        lower_bounds = np.full(num_params, -5.0)  # Lower bound
+        upper_bounds = np.full(num_params, 5.0)  # Upper bound
+
+        return (lower_bounds, upper_bounds)
 
 
 def main():
