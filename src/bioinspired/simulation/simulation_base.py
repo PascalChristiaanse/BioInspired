@@ -1,8 +1,9 @@
 """Simulation Base module
 This module provides the base class for all simulator classes.
 """
-
+import time
 import json
+import logging
 from typing import Callable
 from abc import ABC, abstractmethod
 from tudatpy.numerical_simulation import create_dynamics_simulator
@@ -199,10 +200,17 @@ class SimulationBase(ABC):
                 "value": self._end_epoch,
             }
         )
-        # Create simulation object and propagate dynamics.
-        # print(
-        #     f"Running simulation from {self._start_epoch} to {self._end_epoch} seconds."
-        # )
-        # print("Termination conditions:", self.dump_termination_conditions())
-
-        return create_dynamics_simulator(self.get_body_model(), self._get_propagators())
+        
+        # Telemetry: Display simulation start information with correct namespace
+        logger = logging.getLogger(self.__class__.__module__)
+        simulation_class = self.__class__.__name__
+        logger.debug(f"{simulation_class}: Starting simulation")
+        logger.debug(f"   Start epoch: {self._start_epoch:.2f}s")
+        logger.debug(f"   End epoch: {self._end_epoch:.2f}s")
+        logger.debug(f"   Duration: {self._end_epoch - self._start_epoch:.2f}s")
+        start_time = time.time()
+        result = create_dynamics_simulator(self.get_body_model(), self._get_propagators())
+        end_time = time.time()
+        logger.debug(f"{simulation_class}: Simulation completed in {end_time - start_time:.2f}s")
+        # Return the result of the simulation
+        return result
