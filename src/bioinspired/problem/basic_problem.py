@@ -96,9 +96,10 @@ class BasicController(MLPController):
         target_z_angle = rotation_matrix_to_euler_angles(target_orientation)[2]
         z_angle_diff = target_z_angle - lander_z_angle
 
-        lander_angular_rate = getattr(
-            lander_body, "inertial_to_body_fixed_frame", np.zeros(3)
+        lander_angular_rate = rotation_matrix_to_euler_angles(
+            getattr(lander_body, "inertial_to_body_fixed_frame", np.zeros(3))
         )
+
         target_angular_rate = (
             target_body.rotation_model.time_derivative_body_fixed_to_inertial_rotation(
                 current_time
@@ -179,7 +180,7 @@ class BasicProblem(ProblemBase):
         # Set controller weights from the design parameter
         if design is not None:
             self.controller.set_weights(design)
-        
+
         dynamics_simulator = self.simulator.run(0, 10)
 
         spacecraft_orientation_history = {}
@@ -191,7 +192,10 @@ class BasicProblem(ProblemBase):
         endurance_orientation_history = {}
         relative_distance = {}
         relative_speed = {}
-        for time, vars in dynamics_simulator.propagation_results.dependent_variable_history.items():
+        for (
+            time,
+            vars,
+        ) in dynamics_simulator.propagation_results.dependent_variable_history.items():
             relative_distance[time] = vars[0]
             relative_speed[time] = vars[1]
             endurance_orientation_history[time] = vars[2:11].reshape(3, 3)
@@ -212,25 +216,25 @@ class BasicProblem(ProblemBase):
 def main():
     # Set seed for reproducible results
     np.random.seed(42)
-    
+
     problem = BasicProblem()
-    
+
     # Get the number of parameters needed for the controller
     controller = problem.controller
     num_params = len(controller.get_weights())
     print(f"Controller requires {num_params} parameters")
-    
+
     # Generate reproducible random weights
     random_weights = np.random.randn(num_params) * 0.1  # Small initial weights
-    
+
     # Set the weights in the controller
     controller.set_weights(random_weights)
     print("Set randomized weights with seed 42")
-    
+
     # Evaluate fitness with the seeded random weights
     fitness_value = problem.fitness(None)
     print(f"Fitness with seeded random weights: {fitness_value}")
-    
+
     return problem, fitness_value
 
 
