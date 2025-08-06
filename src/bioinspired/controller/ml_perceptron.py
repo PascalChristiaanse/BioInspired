@@ -26,12 +26,11 @@ class MLPController(nn.Module, ControllerBase):
         lander_name,
         target_name=None,
         **kwargs,
-    ):
-        # Initialize nn.Module (doesn't take arguments)
+    ):        # Initialize nn.Module (doesn't take arguments)
         nn.Module.__init__(self)
         # Initialize ControllerBase with specific arguments
         ControllerBase.__init__(self, simulator, lander_name, target_name)
-
+        
         layers = []
         last_size = input_size
         for h in hidden_sizes:
@@ -39,6 +38,7 @@ class MLPController(nn.Module, ControllerBase):
             layers.append(nn.ReLU())
             last_size = h
         layers.append(nn.Linear(last_size, output_size))
+        layers.append(nn.Sigmoid())  # Add sigmoid to clamp outputs between 0 and 1
         self.network = nn.Sequential(*layers)
         self.output_size = output_size
 
