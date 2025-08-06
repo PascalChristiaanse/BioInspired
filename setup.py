@@ -104,6 +104,44 @@ def get_conda_pip():
 
 def setup_python_environment():
     """Install Python dependencies in tudat-space conda environment and Blender's Python."""
+    
+    # First, configure conda channels and install conda packages
+    print("[INFO] Configuring conda channels...")
+    if not run_command(
+        "conda config --add channels conda-forge",
+        "Adding conda-forge channel"
+    ):
+        return False
+    
+    if not run_command(
+        "conda config --add channels pytorch",
+        "Adding pytorch channel"
+    ):
+        return False
+    
+    # Set flexible channel priority to avoid conflicts
+    if not run_command(
+        "conda config --set channel_priority flexible",
+        "Setting channel priority to flexible"
+    ):
+        return False
+    
+    print("[INFO] Installing conda packages in tudat-space environment...")
+    # Install PyTorch from pytorch channel
+    if not run_command(
+        "conda install -n tudat-space -c pytorch pytorch -y",
+        "Installing PyTorch in tudat-space environment"
+    ):
+        return False
+    
+    # Install pygmo from conda-forge
+    if not run_command(
+        "conda install -n tudat-space -c conda-forge pygmo -y",
+        "Installing pygmo in tudat-space environment"
+    ):
+        return False
+    
+    # Then install pip requirements
     pip_command = get_conda_pip()
     ok = run_command(
         f"{pip_command} install -r requirements.txt",
