@@ -142,8 +142,14 @@ class EphemerisSpacecraft(SpacecraftBase):
             # Load ephemeris data from file
             import pickle
 
-            with open(file_path, "rb") as f:
-                state_dict = pickle.load(f)
+            try:
+                with open(file_path, "rb") as f:
+                    state_dict = pickle.load(f)
+            except FileNotFoundError:
+                state_dict = self._generate_ephemeris_data()
+                # Save the generated ephemeris data to the specified file
+                with open(file_path, "wb") as f:
+                    pickle.dump(state_dict, f)
         else:
             # Generate ephemeris data
             state_dict = self._generate_ephemeris_data()
@@ -157,28 +163,11 @@ class EphemerisSpacecraft(SpacecraftBase):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         return f"{self.spacecraft_class.__name__}_ephemeris_{timestamp}.pkl"
 
-    def save_ephemeris(self, file_path, file_name=None):
-        """Save the current ephemeris data to a file.
-
-        Args:
-            file_path (str): Path to the file where the ephemeris data will be saved.
-            file_name (str, optional): Name of the file to save the ephemeris data. If None, uses a default format.
-        """
-        # Implement saving logic here
-        import pickle
-
-        if file_name is None:
-            file_name = self._format_file_name()
-        full_path = f"{file_path}/{file_name}"
-
-        state_dict = self._generate_ephemeris_data()
-        with open(full_path, "wb") as f:
-            pickle.dump(state_dict, f)
-
     def _create_ephemeris(self, state_dict=None):
         """Create the ephemeris for the spacecraft."""
         # Generate the ephemeris data
-        state_dict = self._generate_ephemeris_data()
+        if state_dict is None:
+            state_dict = self._generate_ephemeris_data()
 
         # Translational interpolator
         translational_settings = lagrange_interpolation(
@@ -216,7 +205,8 @@ class EphemerisSpacecraft(SpacecraftBase):
         # Check if the provided spacecraft is an instance of RotatingSpacecraftBase
         samples = self._create_chebychev_sampled_trajectory(
             start_epoch=self.simulator._start_epoch,
-            end_epoch=self.simulator._end_epoch + 50,
+            end_epoch=self.simulator._end_epoch
+            + 0.1 * (self.simulator._end_epoch - self.simulator._start_epoch),
             n=self.n_datapoints * 1.5,
         )
         state_dict = self._split_state(samples)
