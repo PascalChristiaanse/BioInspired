@@ -10,6 +10,8 @@ The basic problem is defined as:
 """
 
 import numpy as np
+import numba as nb
+from functools import lru_cache
 from overrides import override
 
 from tudatpy.numerical_simulation.propagation import (
@@ -28,7 +30,10 @@ from bioinspired.spacecraft import Lander2, Endurance, EphemerisSpacecraft
 from bioinspired.simulation import EmptyUniverseSimulator
 from bioinspired.controller import MLPController
 
+import logging
 
+
+@nb.jit(nopython=True, cache=True)
 def rotation_matrix_to_euler_angles(rotation_matrix):
     """Convert a rotation matrix to Euler angles (roll, pitch, yaw)."""
     sy = np.sqrt(
@@ -47,6 +52,64 @@ def rotation_matrix_to_euler_angles(rotation_matrix):
         z = 0
 
     return np.array([x, y, z])
+
+
+@nb.jit(nopython=True, cache=True)
+def compute_state_vector_jit(
+    lander_state,
+    target_state,
+    lander_orientation,
+    target_orientation,
+    lander_angular_rate_matrix,
+    target_angular_rate_matrix,
+):
+    """JIT-compiled computation of state vector differences.
+
+    Args:
+        lander_state: [x, y, z, vx, vy, vz] of lander
+        target_state: [x, y, z, vx, vy, vz] of target
+        lander_orientation: 3x3 rotation matrix
+        target_orientation: 3x3 rotation matrix
+        lander_angular_rate_matrix: 3x3 angular rate matrix
+        target_angular_rate_matrix: 3x3 angular rate matrix
+
+    Returns:
+        6-element state vector [x_diff, y_diff, x_dot_diff, y_dot_diff, z_angle_diff, z_rate_diff]
+    """
+    # Position and velocity differences
+    x_diff = target_state[0] - lander_state[0]
+    y_diff = target_state[1] - lander_state[1]
+    x_dot_diff = target_state[3] - lander_state[3]
+    y_dot_diff = target_state[4] - lander_state[4]
+
+    # Angular differences - extract Z angles from rotation matrices
+    lander_z_angle = rotation_matrix_to_euler_angles(lander_orientation)[2]
+    target_z_angle = rotation_matrix_to_euler_angles(target_orientation)[2]
+    z_angle_diff = target_z_angle - lander_z_angle
+
+    # Angular rate differences - extract Z rates
+    lander_angular_rate = rotation_matrix_to_euler_angles(lander_angular_rate_matrix)
+    target_angular_rate = rotation_matrix_to_euler_angles(target_angular_rate_matrix)
+    z_rate_diff = target_angular_rate[2] - lander_angular_rate[2]
+
+    return np.array([x_diff, y_diff, x_dot_diff, y_dot_diff, z_angle_diff, z_rate_diff])
+
+
+@nb.jit(nopython=True, cache=True)
+def apply_control_vector_jit(control_vector):
+    """JIT-compiled control vector application to thrust vector.
+
+    Args:
+        control_vector: 2-element control output from neural network
+
+    Returns:
+        24-element thrust vector with control applied to thrusters 8 and 13"""
+    modified_thrust_vector = np.zeros(24)
+    modified_thrust_vector[0] = control_vector[0]
+    modified_thrust_vector[12] = control_vector[0]
+    modified_thrust_vector[9] = control_vector[1]
+    modified_thrust_vector[4] = control_vector[1]
+    return modified_thrust_vector
 
 
 class BasicController(MLPController):
@@ -72,6 +135,8 @@ class BasicController(MLPController):
 
     @override
     def extract_state_vector(self, current_time) -> np.ndarray:
+        """Extract state vector with JIT optimization for computational parts."""
+        # Fetch data from TudatPy (can't be JIT compiled)
         lander_body = self.simulator.get_body_model().get(self.lander_name)
         lander_state = (
             lander_body.state if hasattr(lander_body, "state") else np.zeros(6)
@@ -80,47 +145,54 @@ class BasicController(MLPController):
         target_body = self.simulator.get_body_model().get(self.target_name)
         target_state = target_body.ephemeris.cartesian_state(current_time)
 
-        x_diff = target_state[0] - lander_state[0]
-        y_diff = target_state[1] - lander_state[1]
-        x_dot_diff = target_state[3] - lander_state[3]
-        y_dot_diff = target_state[4] - lander_state[4]
-
         lander_orientation = getattr(
-            lander_body, "body_fixed_to_inertial_frame", np.zeros(9)
+            lander_body, "body_fixed_to_inertial_frame", np.eye(3)
         )
-        lander_z_angle = rotation_matrix_to_euler_angles(lander_orientation)[2]
+        # Ensure we have a proper 3x3 matrix
+        if len(lander_orientation) == 9:
+            lander_orientation = lander_orientation.reshape(3, 3)
+        elif lander_orientation.shape != (3, 3):
+            lander_orientation = np.eye(3)
 
         target_orientation = target_body.rotation_model.body_fixed_to_inertial_rotation(
             current_time
         )
-        target_z_angle = rotation_matrix_to_euler_angles(target_orientation)[2]
-        z_angle_diff = target_z_angle - lander_z_angle
 
-        lander_angular_rate = rotation_matrix_to_euler_angles(
-            getattr(lander_body, "inertial_to_body_fixed_frame", np.zeros(3))
+        lander_angular_rate_matrix = getattr(
+            lander_body, "inertial_to_body_fixed_frame", np.eye(3)
         )
+        # Ensure we have a proper 3x3 matrix
+        if len(lander_angular_rate_matrix) == 9:
+            lander_angular_rate_matrix = lander_angular_rate_matrix.reshape(3, 3)
+        elif lander_angular_rate_matrix.shape != (3, 3):
+            lander_angular_rate_matrix = np.eye(3)
 
-        target_angular_rate = (
+        target_angular_rate_matrix = (
             target_body.rotation_model.time_derivative_body_fixed_to_inertial_rotation(
                 current_time
             )
         )
-        z_rate_diff = (lander_angular_rate[2] - target_angular_rate[2])[2]
 
-        return np.array(
-            [x_diff, y_diff, x_dot_diff, y_dot_diff, z_angle_diff, z_rate_diff]
+        # Use JIT-compiled computation for the heavy mathematical work
+        return compute_state_vector_jit(
+            lander_state[:6],  # Ensure we have exactly 6 elements
+            target_state[:6],
+            lander_orientation,
+            target_orientation,
+            lander_angular_rate_matrix,
+            target_angular_rate_matrix,
         )
 
+    @lru_cache(maxsize=8)
+    @override
     def get_control_action(self, current_time):
-        """Return the modified control action for two thrusters."""
+        """Return the modified control action for two thrusters with JIT optimization."""
         state_vector = self.extract_state_vector(current_time)
         control_vector = self.forward(state_vector)
         control_vector = control_vector.detach().numpy()
-        # Modify the thrust vector for two thrusters
-        modified_thrust_vector = np.zeros(24)
-        modified_thrust_vector[8] = control_vector[0]
-        modified_thrust_vector[13] = control_vector[1]
-        return modified_thrust_vector
+
+        # Use JIT-compiled function for thrust vector modification
+        return apply_control_vector_jit(control_vector)
 
 
 def test() -> np.ndarray:
@@ -189,7 +261,7 @@ class BasicProblem(ProblemBase):
         if design is not None:
             controller.set_weights(design)
 
-        dynamics_simulator = simulator.run(0, 10)
+        dynamics_simulator = simulator.run(0, 50)
 
         spacecraft_orientation_history = {}
         for time, state in dynamics_simulator.state_history.items():
@@ -216,6 +288,9 @@ class BasicProblem(ProblemBase):
                 "orientation_matrix_B": endurance_orientation_history,
             }
         )
+        
+        del dynamics_simulator
+        
         return [-1 * cost]
 
     def get_bounds(self):
@@ -225,13 +300,19 @@ class BasicProblem(ProblemBase):
         num_params = len(controller.get_weights())
 
         # Set reasonable bounds for neural network weights
-        lower_bounds = np.full(num_params, -5.0)  # Lower bound
-        upper_bounds = np.full(num_params, 5.0)  # Upper bound
+        lower_bounds = np.full(num_params, -10.0)  # Lower bound
+        upper_bounds = np.full(num_params, 10.0)  # Upper bound
 
         return (lower_bounds, upper_bounds)
 
 
 def main():
+    # Set loglevel to debug
+    logging.basicConfig(
+        level=logging.DEBUG, format="%(name)s - %(levelname)s - %(message)s"
+    )
+    # Suppress numba logging messages
+    logging.getLogger("numba").setLevel(logging.WARNING)
     # Set seed for reproducible results
     np.random.seed(42)
 
@@ -244,12 +325,17 @@ def main():
     print(f"Controller requires {num_params} parameters")
 
     # Generate reproducible random weights
-    random_weights = np.random.randn(num_params) * 0.1  # Small initial weights
+    import time
 
+    t_start = time.time()
     # Evaluate fitness with the seeded random weights
-    fitness_value = problem.fitness(random_weights)
-    print(f"Fitness with seeded random weights: {fitness_value}")
+    for i in range(5):
+        random_weights = np.random.randn(num_params) * 0.1  # Small initial weights
+        print(f"Iteration {i + 1}")
+        fitness_value = problem.fitness(random_weights)
+        print(f"Fitness with seeded random weights: {fitness_value}")
 
+    print(f"Total time taken: {time.time() - t_start:.2f} seconds")
     return problem, fitness_value
 
 
