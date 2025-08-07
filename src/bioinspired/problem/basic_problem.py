@@ -154,7 +154,7 @@ class BasicProblem(ProblemBase):
             dependent_variable.custom_dependent_variable(endurance.get_orientation, 9)
         )
 
-        endurance.load_ephemeris()
+        endurance.load_ephemeris("./endurance_ephemeris.dat")
 
         translational_state = np.array([0, 0, 0, 0, 0, 0])  # Initial position (x, y, z)
         orientation = np.eye(3)
