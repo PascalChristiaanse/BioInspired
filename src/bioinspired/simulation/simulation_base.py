@@ -1,6 +1,7 @@
 """Simulation Base module
 This module provides the base class for all simulator classes.
 """
+
 import time
 import json
 import logging
@@ -141,12 +142,22 @@ class SimulationBase(ABC):
                 # Create a CPU time termination condition
                 termination_settings = propagator.cpu_time_termination(value)
                 self._termination_list.append(termination_settings)
+            elif condition_type == "propagator.PropagationCustomTerminationSettings":
+                # Create a custom termination condition
+                if callable(condition):
+                    termination_settings = propagator.custom_termination(condition)
+                    self._termination_list.append(termination_settings)
+                else:
+                    raise ValueError(
+                        "Custom termination conditions must be callable functions."
+                    )
             else:
                 raise ValueError(
                     f"Unknown termination condition type: {condition_type}. "
                     "Supported types are: 'propagator.PropagationDependentVariableTerminationSettings', "
                     "'propagator.PropagationTimeTerminationSettings', "
-                    "'propagator.PropagationCPUTimeTerminationSettings'."
+                    "'propagator.PropagationCPUTimeTerminationSettings',"
+                    "'propagator.PropagationCustomTerminationSettings'."
                 )
         termination_settings = propagator.hybrid_termination(
             self._termination_list, fulfill_single_condition=True
@@ -175,12 +186,14 @@ class SimulationBase(ABC):
             "propagator.PropagationDependentVariableTerminationSettings",
             "propagator.PropagationTimeTerminationSettings",
             "propagator.PropagationCPUTimeTerminationSettings",
+            "propagator.PropagationCustomTerminationSettings",
         ]:
             raise ValueError(
                 "Invalid termination condition type. Supported types are: "
                 "'propagator.PropagationDependentVariableTerminationSettings', "
                 "'propagator.PropagationTimeTerminationSettings', "
-                "'propagator.PropagationCPUTimeTerminationSettings'."
+                "'propagator.PropagationCPUTimeTerminationSettings',"
+                "'propagator.PropagationCustomTerminationSettings'."
             )
         self._custom_termination_list.append(termination_condition)
 
@@ -200,7 +213,7 @@ class SimulationBase(ABC):
                 "value": self._end_epoch,
             }
         )
-        
+
         # Telemetry: Display simulation start information with correct namespace
         logger = logging.getLogger(self.__class__.__module__)
         simulation_class = self.__class__.__name__
@@ -209,8 +222,12 @@ class SimulationBase(ABC):
         logger.debug(f"   End epoch: {self._end_epoch:.2f}s")
         logger.debug(f"   Duration: {self._end_epoch - self._start_epoch:.2f}s")
         start_time = time.time()
-        result = create_dynamics_simulator(self.get_body_model(), self._get_propagators())
+        result = create_dynamics_simulator(
+            self.get_body_model(), self._get_propagators()
+        )
         end_time = time.time()
-        logger.debug(f"{simulation_class}: Simulation completed in {end_time - start_time:.2f}s")
+        logger.debug(
+            f"{simulation_class}: Simulation completed in {end_time - start_time:.2f}s"
+        )
         # Return the result of the simulation
         return result
