@@ -2,7 +2,7 @@
 This module provides a base class for spacecraft designs that can be serialized to and from JSON.
 It will load a JSON configuration file based on the spacecraft name (self.name), and look for it in the folder containing the spacecraft design.
 """
-
+import os
 import json
 import numpy as np
 from abc import abstractmethod
@@ -39,14 +39,43 @@ class JSONSpacecraftBase(SpacecraftBase):
         It then adds all properties to the spacecraft object.
         The JSON file should be located in the same directory as this module.
         """
-        config_path = f"src/bioinspired/spacecraft/{self.name}.json"
+        
+        
+        # Get the directory where this file is located
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        config_filename = f"{self.name}.json"
+        
+        # Try multiple potential paths
+        potential_paths = [
+            # Path 1: Same directory as this module (most reliable)
+            os.path.join(current_dir, config_filename),
+            # Path 2: From project root
+            f"src/bioinspired/spacecraft/{config_filename}",
+            # Path 3: From src folder
+            f"bioinspired/spacecraft/{config_filename}",
+            # Path 4: Relative from current working directory
+            os.path.join("src", "bioinspired", "spacecraft", config_filename),
+        ]
+        
+        config_path = None
+        for path in potential_paths:
+            if os.path.exists(path):
+                config_path = path
+                break
+        
+        if config_path is None:
+            attempted_paths = "\n  ".join(potential_paths)
+            raise FileNotFoundError(
+                f"Configuration file '{config_filename}' not found. "
+                f"Attempted paths:\n  {attempted_paths}"
+            )
+        
         try:
             with open(config_path, "r") as file:
                 config = json.load(file)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Configuration file {config_path} not found.")
         except json.JSONDecodeError as e:
             raise ValueError(f"Error decoding JSON from {config_path}: {e}")
+        
         self._apply_config(config)
         return config
 
