@@ -15,6 +15,7 @@ print(f"Started at: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(name)s - %(levelname)s - %(message)s')
+logging.getLogger("numba").setLevel(logging.WARNING)
 
 try:
     import pickle
