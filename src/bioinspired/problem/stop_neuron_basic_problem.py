@@ -24,7 +24,7 @@ from tudatpy.astro.element_conversion import (
 )
 
 from bioinspired.problem import ProblemBase
-from bioinspired.problem import JLeitner2010
+from bioinspired.problem import JLeitner2010NoStopNeuron
 
 from bioinspired.spacecraft import Lander2, Endurance, EphemerisSpacecraft
 from bioinspired.simulation import EmptyUniverseSimulator
@@ -33,8 +33,7 @@ from bioinspired.controller import MLPController
 import logging
 
 # Suppress numba logging messages
-logging.getLogger("numba").setLevel(logging.WARNING)
-logging.getLogger("matplotlib").setLevel(logging.WARNING)
+logging.getLogger('numba').setLevel(logging.WARNING)
 
 
 @nb.jit(nopython=True, cache=True)
@@ -119,42 +118,32 @@ def apply_control_vector_jit(control_vector):
 
 class StopNeuronMixin:
     """Mixin to add stop neuron capability to any controller."""
-
-    def __init__(self, *args, stop_threshold=0.5, **kwargs):
-        super().__init__(*args, **kwargs)
+    
+    def __init__(self, simulator, *args, stop_threshold=0.5, **kwargs):
+        super().__init__(simulator=simulator, *args, **kwargs)
         self.stop_threshold = stop_threshold
-        # The simulator should be available via the parent class
-        if hasattr(self, "simulator"):
-            self.simulator.add_termination_condition(
-                {
-                    "type": "propagator.PropagationCustomTerminationSettings",
-                    "condition": self.should_stop_simulation,
-                    "value": None,
-                }
-            )
-
+        self.simulator.add_termination_condition(
+            self.should_stop_simulation,
+            max_simulation_time=self.max_simulation_time,
+        )
+    
     def should_stop_simulation(self, current_time):
         """Check if simulation should stop based on stop neuron output."""
         # Get the full control vector including stop neuron
         state_vector = self.extract_state_vector(current_time)
         control_vector = self.forward(state_vector)
         control_vector = control_vector.detach().numpy()
-
+        
         # Stop neuron is the last output
         stop_signal = control_vector[2] if len(control_vector) > 2 else 0
-        if stop_signal > self.stop_threshold:
-            logging.getLogger("StopNeuronMixin").debug(
-                "   Stopping simulation due to stop neuron signal."
-            )
-            # print("Stopping simulation due to stop neuron signal.")
         return stop_signal > self.stop_threshold
-
+    
     def get_thrust_only(self, current_time):
         """Get just the thrust commands without stop neuron."""
         state_vector = self.extract_state_vector(current_time)
         control_vector = self.forward(state_vector)
         control_vector = control_vector.detach().numpy()
-
+        
         # Return only the first 2 elements (thrust commands)
         return apply_control_vector_jit(control_vector[:2])
 
@@ -165,15 +154,19 @@ class StopNeuronBasicController(StopNeuronMixin, MLPController):
     def __init__(
         self,
         simulator,
+        lander_name,
+        target_name,
         stop_threshold=0.5,
         **kwargs,
     ):
         """Initialize the basic controller with stop neuron."""
         super().__init__(
-            input_size=6,  # input_size
-            hidden_sizes=[10],  # hidden_sizes
-            output_size=3,  # output_size (2 thrusters + 1 stop neuron)
-            simulator=simulator,
+            6,         # input_size
+            [10],      # hidden_sizes
+            3,         # output_size (2 thrusters + 1 stop neuron)
+            simulator,
+            lander_name,
+            target_name,
             stop_threshold=stop_threshold,
             **kwargs,
         )
@@ -239,7 +232,7 @@ class StopNeuronBasicProblem(ProblemBase):
     """Basic problem with stop neuron capability for the automatic rendezvous and docking (AR&D) problem."""
 
     def __init__(self, stop_threshold=0.5, max_simulation_time=50):
-        super().__init__(JLeitner2010())
+        super().__init__(JLeitner2010NoStopNeuron())
         self.stop_threshold = stop_threshold
         self.max_simulation_time = max_simulation_time
         # Make the problem stateless - no instance variables to store objects
@@ -296,6 +289,7 @@ class StopNeuronBasicProblem(ProblemBase):
         simulator, endurance, controller, spacecraft = (
             self._create_simulator_components()
         )
+
         if design is not None:
             controller.set_weights(design)
 
@@ -326,9 +320,18 @@ class StopNeuronBasicProblem(ProblemBase):
                 "orientation_matrix_B": endurance_orientation_history,
             }
         )
-
+        
+        # Add penalty for early stopping if distance is still large
+        final_distance = list(relative_distance.values())[-1] if relative_distance else float('inf')
+        if stop_time < self.max_simulation_time and final_distance > 1.0:
+            # Penalty for stopping too early when not close to target
+            cost += (self.max_simulation_time - stop_time) * 0.1
+        elif stop_time < self.max_simulation_time and final_distance <= 1.0:
+            # Bonus for successful early stopping when close to target
+            cost -= (self.max_simulation_time - stop_time) * 0.05
+        
         del dynamics_simulator
-
+        
         return [-1 * cost]
 
     def get_bounds(self):
