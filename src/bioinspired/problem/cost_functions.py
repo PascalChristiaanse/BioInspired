@@ -39,7 +39,7 @@ class JLeitner2010(CostFunctionBase):
 
     def __init__(self):
         super().__init__()
-        self.t_max = 1000  # maximum time allowed for docking procedure, same as in J. Leitner et al. (2010)
+        self.t_max = 50  # maximum time allowed for docking procedure, same as in J. Leitner et al. (2010)
         self.docking_tolerance_position = 0.1  # meters
         self.docking_tolerance_velocity = 0.1
         self.docking_tolerance_orientation = np.pi / 8
