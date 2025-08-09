@@ -141,7 +141,8 @@ class SimulationBase(ABC):
             if condition_type == "propagator.PropagationDependentVariableTerminationSettings":
                 termination_settings = propagator.dependent_variable_termination(condition, value)
             elif condition_type == "propagator.PropagationTimeTerminationSettings":
-                termination_settings = propagator.time_termination(value, terminate_exactly_on_final_condition=True)            elif condition_type == "propagator.PropagationCPUTimeTerminationSettings":
+                termination_settings = propagator.time_termination(value, terminate_exactly_on_final_condition=True)            
+            elif condition_type == "propagator.PropagationCPUTimeTerminationSettings":
                 termination_settings = propagator.cpu_time_termination(value)
             else:
                 raise ValueError(
