@@ -9,13 +9,38 @@ Designed for 16-core systems with 2x oversubscription (32 islands) for optimal C
 import numpy as np
 import pygmo as pg
 
-from bioinspired.algorithm import InitializerBFE
+from bioinspired.algorithm import InitializerBFE, SliceablePopulation
 
-from bioinspired.problem import BasicProblem
+from bioinspired.problem import StopNeuronBasicProblem as ProblemClass
 import time
 import datetime
 import multiprocessing
 import logging
+
+
+class TelemetrySGA:
+    def __init__(self, generations, *args, **kwargs):
+        self.generations = generations
+        self.args = args
+        self.kwargs = kwargs
+
+    def evolve(self, pop):
+        new_pop = pop
+        algo = pg.algorithm(pg.sga(*self.args, **self.kwargs))
+        algo.set_verbosity(2)  # Reduce verbosity for clean logging
+        for gen in range(self.generations):
+            print(f"Generation {gen + 1}/{self.generations}")
+            new_pop = algo.evolve(new_pop)
+            # Log the current generation's best fitness
+            best_fitness = pop.champion_f
+            champion = pop.champion_x
+            # Save champion to file using np.save
+            np.save(f"champion_gen_{gen + 1}_time:{time.ctime()}.npy".replace(':', "-"), champion)
+            print(f"Best fitness in generation {gen + 1}: {best_fitness[0]:.6f}")
+        return new_pop
+
+    def get_name(self):
+        return f"Telemetry SGA ({self.generations} generations)"
 
 
 def setup_logging():
@@ -46,100 +71,136 @@ def run_archipelago_optimization(seed=42):
     print("=" * 80)
     print(f"Started at: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-    # Detect CPU cores and configure archipelago
-    num_cores = multiprocessing.cpu_count()
-    target_cores = min(4, num_cores)  # Use up to 16 cores as specified
-    num_islands = target_cores * 2  # 2x oversubscription for maximum CPU utilization
-
-    logger.info(f"System has {num_cores} CPU cores")
-    logger.info(f"Using {target_cores} cores with {num_islands} islands")
-
     # Verify problem is picklable for multiprocessing
     try:
         import pickle
 
-        test_udp = BasicProblem()
+        test_udp = ProblemClass()
         pickle.dumps(test_udp)
         logger.info("Problem confirmed picklable for multiprocessing")
     except Exception as e:
         logger.error(f"Problem is not picklable: {e}")
         return
 
+    # Detect CPU cores and configure archipelago
+    num_cores = multiprocessing.cpu_count()
+    target_cores = min(8, num_cores)
+    num_islands = target_cores * 1  # 2x oversubscription for maximum CPU utilization
+
+    logger.info(f"System has {num_cores} CPU cores")
+    logger.info(f"Using {target_cores} cores with {num_islands} islands")
+
+    # Archipelago configuration
+    generations_per_migration_event = 3
+    migration_events = 1
+    population_size = 16 * num_islands  # Total population size across all islands
+    population_size_per_island = int(np.ceil(population_size / num_islands))
+    total_evaluations = (
+        population_size_per_island
+        * generations_per_migration_event
+        * num_islands
+        * (migration_events + 1)
+    )
+
+    logger.info("Configuration:")
+    logger.info(f"  Islands: {num_islands}")
+    logger.info(f"  Generations per migration event: {generations_per_migration_event}")
+    logger.info(f"  Migration events: {migration_events}")
+    logger.info(
+        f"  Total generations: {generations_per_migration_event * (migration_events + 1)}"
+    )
+    logger.info(f"  Population per island: {population_size_per_island}")
+    logger.info(f"  Total evaluations: ~{total_evaluations}")
+
     # Get problem information
-    udp = BasicProblem()
+    udp = ProblemClass()
     bounds = udp.get_bounds()
     num_parameters = len(bounds[0])
     logger.info(f"Neural network parameters: {num_parameters}")
     logger.info(f"Parameter bounds: [{bounds[0][0]:.1f}, {bounds[1][0]:.1f}]")
 
-    # Archipelago configuration
-    generations = 20
-    population_size = 32
-    population_size_per_island = int(
-        round(population_size / num_islands, 0)
-    )  # Ensure population size is an integer
-    total_evaluations = num_islands * generations * population_size_per_island
-
-    logger.info("Configuration:")
-    logger.info(f"  Islands: {num_islands}")
-    logger.info(f"  Generations per island: {generations}")
-    logger.info(f"  Population per island: {population_size_per_island}")
-    logger.info(f"  Total evaluations: ~{total_evaluations}")
-
     print(f"\nInitializing {num_islands}-island archipelago...")
 
     initial_population_time = time.time()
     # Create an initial population using the Multiprocessing BFE
-    initial_population = pg.population(
+    initial_population = SliceablePopulation(
         udp,
         size=population_size_per_island * num_islands,
-        b=InitializerBFE(BasicProblem().get_bounds()[0].shape[0], int(round(population_size/64))),
+        b=pg.mp_bfe(64),
+        # b=InitializerBFE(
+        #     ProblemClass().get_bounds()[0].shape[0], int(round(population_size / 64))
+        # ),
         seed=seed,
     )
     initial_population_time = time.time() - initial_population_time
     print(f"Initial population created in {initial_population_time:.2f}s")
 
-
     # Create archipelago using PyGMO's built-in class
     archipelago_start = time.time()
-
     try:
-        # Create problem instance
-        prob = pg.problem(BasicProblem())
-
-        # Create algorithm for all islands (using SGA for simplicity)
+        # Set up the algorithm for all islands
         algo = pg.algorithm(
-            pg.sga(
-                gen=generations,
+            TelemetrySGA(
+                generations=generations_per_migration_event,
+                gen=generations_per_migration_event,
                 cr=0.95,  # JLeitner (2010)
                 m=0.01,  # JLeitner (2010)
                 seed=seed,
             )
         )
-        algo.set_verbosity(5)  # Reduce verbosity for clean logging
-        # Create archipelago with specified number of islands, problem, algorithm, and population size
+        # algo = pg.algorithm(
+        #     pg.sga(
+        #         gen=generations_per_migration_event,
+        #         cr=0.95,  # JLeitner (2010)
+        #         m=0.01,  # JLeitner (2010)
+        #         seed=seed,
+        #     )
+        # )
+        # algo.set_verbosity(2)  # Reduce verbosity for clean logging
+
+        # Create empty archipelago
         archi = pg.archipelago(
-            n=num_islands,
-            t=pg.topology(pg.fully_connected(num_islands)),
-            # prob=prob,
-            algo=algo,
-            pop=initial_population,
-            # pop_size=population_size,
-            # seed=seed,
+            t=pg.topology(pg.fully_connected()),
+            # algo=algo,
         )
+        for i in range(num_islands):
+            island = pg.island(
+                # udi=pg.mp_island(use_pool=True),
+                pop=initial_population[
+                    i * population_size_per_island : (i + 1)
+                    * population_size_per_island
+                ],
+                algo=algo,
+            )
+            archi.push_back(island)
+
+        print("Archipelago created with the following islands:")
+        for i, island in enumerate(archi):
+            print(f"  Island {i + 1}: {len(island.get_population())} individuals")
+
         print(archi)
 
         print("Running optimization across all CPU cores...")
 
         # Start the optimization
-        archi.evolve()
+        test = archi.evolve(migration_events + 1)
+
         print(archi)
         # Wait for completion
+        # wait 5 seconds
+        print("Waiting for archipelago to complete...")
+        time.sleep(5)  # Simulate some processing time
         archi.wait_check()
+        print(test)
+        # Present migration log
+        print("\nMigration log:")
+        print(archi.get_migration_log())
 
         archipelago_time = time.time() - archipelago_start
         logger.info(f"Archipelago completed in {archipelago_time:.2f}s")
-
+        archi.evolve()
+        print(archi)
+        archi.wait_check()
         # Collect results from all islands
         results = []
         for i, island in enumerate(archi):
