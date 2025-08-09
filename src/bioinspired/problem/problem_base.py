@@ -42,4 +42,11 @@ class ProblemBase(ABC):
         """
         raise NotImplementedError("Subclasses must implement this method.")
         
-    
+    def get_name(self):
+        """Get the name of the problem.
+        This method can be overridden by subclasses to provide a specific name for the problem.
+        
+        Returns:
+            str: The name of the problem.
+        """
+        return self.__class__.__name__
