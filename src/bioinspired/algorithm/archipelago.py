@@ -19,14 +19,13 @@ import logging
 
 
 class TelemetrySGA:
-    def __init__(self, generations, *args, **kwargs):
+    def __init__(self, generations, **kwargs):
         self.generations = generations
-        self.args = args
         self.kwargs = kwargs
 
     def evolve(self, pop):
         new_pop = pop
-        algo = pg.algorithm(pg.sga(*self.args, **self.kwargs))
+        algo = pg.algorithm(pg.sga(gen=1, **self.kwargs))
         algo.set_verbosity(2)  # Reduce verbosity for clean logging
         for gen in range(self.generations):
             print(f"Generation {gen + 1}/{self.generations}")
@@ -35,7 +34,10 @@ class TelemetrySGA:
             best_fitness = pop.champion_f
             champion = pop.champion_x
             # Save champion to file using np.save
-            np.save(f"champion_gen_{gen + 1}_time:{time.ctime()}.npy".replace(':', "-"), champion)
+            np.save(
+                f"champion_gen_{gen + 1}_time:{time.ctime()}.npy".replace(":", "-"),
+                champion,
+            )
             print(f"Best fitness in generation {gen + 1}: {best_fitness[0]:.6f}")
         return new_pop
 
@@ -139,24 +141,6 @@ def run_archipelago_optimization(seed=42):
     archipelago_start = time.time()
     try:
         # Set up the algorithm for all islands
-        algo = pg.algorithm(
-            TelemetrySGA(
-                generations=generations_per_migration_event,
-                gen=generations_per_migration_event,
-                cr=0.95,  # JLeitner (2010)
-                m=0.01,  # JLeitner (2010)
-                seed=seed,
-            )
-        )
-        # algo = pg.algorithm(
-        #     pg.sga(
-        #         gen=generations_per_migration_event,
-        #         cr=0.95,  # JLeitner (2010)
-        #         m=0.01,  # JLeitner (2010)
-        #         seed=seed,
-        #     )
-        # )
-        # algo.set_verbosity(2)  # Reduce verbosity for clean logging
 
         # Create empty archipelago
         archi = pg.archipelago(
@@ -164,6 +148,16 @@ def run_archipelago_optimization(seed=42):
             # algo=algo,
         )
         for i in range(num_islands):
+            algo = pg.algorithm(
+                TelemetrySGA(
+                    island_id=i,
+                    generations=generations_per_migration_event,
+                    gen=generations_per_migration_event,
+                    cr=0.95,  # JLeitner (2010)
+                    m=0.01,  # JLeitner (2010)
+                    seed=seed,
+                )
+            )
             island = pg.island(
                 # udi=pg.mp_island(use_pool=True),
                 pop=initial_population[
