@@ -7,6 +7,11 @@ It is designed to work with PostgreSQL and uses SQLAlchemy for ORM.
 
 from .init_db import init_database as init_db
 from .models import Simulation, Spacecraft, Trajectory
+from .pygmo_models import (
+    Archipelago,
+    Island,
+    Individual,
+)
 from .database import get_session, get_session_context, create_tables
 from .services import (
     save_simulation,
@@ -26,7 +31,10 @@ __all__ = [
     # Models
     "Trajectory",
     "Simulation",
-    "Spacecraft",
+    "Spacecraft",    # Pygmo models
+    "Archipelago",
+    "Island",
+    "Individual",
     # Database functions
     "get_session",
     "get_session_context",
