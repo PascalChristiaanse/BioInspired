@@ -215,7 +215,8 @@ data/trajectories/*.h5
 logs/
 
 # IDE specific
-.vscode/
+.vscode/*
+!.vscode/launch.json
 .idea/
 *.swp
 *.swo
