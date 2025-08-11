@@ -144,12 +144,16 @@ class SimulationBase(ABC):
                 termination_settings = propagator.time_termination(value, terminate_exactly_on_final_condition=True)            
             elif condition_type == "propagator.PropagationCPUTimeTerminationSettings":
                 termination_settings = propagator.cpu_time_termination(value)
+            elif condition_type == "propagator.PropagationCustomTerminationSettings":
+                # Assuming condition is a callable function for custom termination
+                termination_settings = propagator.custom_termination(condition)
             else:
                 raise ValueError(
                     f"Unknown termination condition type: {condition_type}. "
                     "Supported types are: 'propagator.PropagationDependentVariableTerminationSettings', "
                     "'propagator.PropagationTimeTerminationSettings', "
-                    "'propagator.PropagationCPUTimeTerminationSettings'."
+                    "'propagator.PropagationCPUTimeTerminationSettings',"
+                    "'propagator.PropagationCustomTerminationSettings'."
                 )
             self._custom_termination_list.append(termination_settings)
         else:

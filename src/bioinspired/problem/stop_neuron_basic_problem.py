@@ -119,11 +119,18 @@ def apply_control_vector_jit(control_vector):
 class StopNeuronMixin:
     """Mixin to add stop neuron capability to any controller."""
 
-    def __init__(self, simulator, stop_threshold=0.5, **kwargs):
+    def __init__(
+        self,
+        simulator,
+        stop_threshold: float = 0.5,
+        **kwargs,
+    ):
         self.stop_threshold = stop_threshold
         simulator.add_termination_condition(
-            self.should_stop_simulation,
-            max_simulation_time=self.max_simulation_time,
+            {
+                "type": "propagator.PropagationCustomTerminationSettings",
+                "condition": self.should_stop_simulation,
+            }
         )
 
     def should_stop_simulation(self, current_time):
@@ -135,6 +142,8 @@ class StopNeuronMixin:
 
         # Stop neuron is the last output
         stop_signal = control_vector[2] if len(control_vector) > 2 else 0
+        # if stop_signal > self.stop_threshold:
+            # print(f"Stopping simulation at time {current_time} with stop signal: {stop_signal}")
         return stop_signal > self.stop_threshold
 
     def get_thrust_only(self, current_time):
@@ -169,6 +178,7 @@ class StopNeuronBasicController(MLPController, StopNeuronMixin):
             stop_threshold=stop_threshold,
             **kwargs,
         )
+        StopNeuronMixin.__init__(self, simulator, stop_threshold=stop_threshold, **kwargs)
 
     @override
     def extract_state_vector(self, current_time) -> np.ndarray:
@@ -272,6 +282,7 @@ class StopNeuronBasicProblem(ProblemBase):
             lander_name="Lander 2",
             target_name="Endurance-Ephemeris",
             stop_threshold=self.stop_threshold,
+            max_simulation_time=self.max_simulation_time,
         )
 
         spacecraft = Lander2(
