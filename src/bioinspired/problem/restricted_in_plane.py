@@ -24,7 +24,7 @@ from tudatpy.astro.element_conversion import (
 )
 
 from bioinspired.problem import ProblemBase
-from bioinspired.problem import JLeitner2010
+from bioinspired.problem import JLeitner2010wAngularVelocity
 
 from bioinspired.spacecraft import Lander2, Endurance, EphemerisSpacecraft
 from bioinspired.simulation import EmptyUniverseSimulator
@@ -174,7 +174,7 @@ class RestrictedInPlaneController(MLPController, StopNeuronMixin):
         """Initialize the basic controller with stop neuron."""
         super().__init__(
             input_size=6,  # input_size
-            hidden_sizes=[20],  # hidden_sizes
+            hidden_sizes=[25],  # hidden_sizes
             output_size=5,  # output_size (4 thrusters + 1 stop neuron)
             simulator=simulator,
             lander_name=lander_name,
@@ -247,7 +247,7 @@ class RestrictedInPlaneProblem(ProblemBase):
     """Basic problem with stop neuron capability for the automatic rendezvous and docking (AR&D) problem."""
 
     def __init__(self, stop_threshold=0.5, max_simulation_time=50):
-        super().__init__(JLeitner2010())
+        super().__init__(JLeitner2010wAngularVelocity())
         self.stop_threshold = stop_threshold
         self.max_simulation_time = max_simulation_time
         self.max_angular_velocity = 1  # Maximum allowed angular velocity
@@ -330,14 +330,19 @@ class RestrictedInPlaneProblem(ProblemBase):
         dynamics_simulator = simulator.run(0, 50)
 
         spacecraft_orientation_history = {}
+        spacecraft_angular_velocity = {}
+
         for time, state in dynamics_simulator.state_history.items():
             spacecraft_orientation_history[time] = (
                 quaternion_entries_to_rotation_matrix(state[6:10])
             )
+            spacecraft_angular_velocity[time] = state[10:13]
+
 
         endurance_orientation_history = {}
         relative_distance = {}
         relative_speed = {}
+        endurance_angular_velocity = {}
         for (
             time,
             vars,
@@ -345,13 +350,19 @@ class RestrictedInPlaneProblem(ProblemBase):
             relative_distance[time] = vars[0]
             relative_speed[time] = vars[1]
             endurance_orientation_history[time] = vars[2:11].reshape(3, 3)
-
+            endurance_angular_velocity[time] = (
+                simulator.get_body_model()
+                .get("Endurance-Ephemeris")
+                .rotation_model.angular_velocity_in_inertial_frame(time)
+            )
         cost = self.cost_function.cost(
             {
                 "relative_distance": relative_distance,
                 "relative_speed": relative_speed,
                 "orientation_matrix_A": spacecraft_orientation_history,
                 "orientation_matrix_B": endurance_orientation_history,
+                "angular_velocity_A": spacecraft_angular_velocity,
+                "angular_velocity_B": endurance_angular_velocity,
             }
         )
 
@@ -405,15 +416,25 @@ def main():
     # Generate reproducible random weights
     import time
 
-    t_start = time.time()
-    # Evaluate fitness with the seeded random weights
-    for i in range(3):
-        random_weights = np.random.randn(num_params) * 0.1  # Small initial weights
-        print(f"Iteration {i + 1}")
-        fitness_value = problem.fitness(random_weights)
-        print(f"Fitness with seeded random weights: {fitness_value}")
+    # t_start = time.time()
+    # # Evaluate fitness with the seeded random weights
+    # for i in range(3):
+    #     random_weights = np.random.randn(num_params) * 0.1  # Small initial weights
+    #     print(f"Iteration {i + 1}")
+    #     fitness_value = problem.fitness(random_weights)
+    #     print(f"Fitness with seeded random weights: {fitness_value}")
 
-    print(f"Total time taken: {time.time() - t_start:.2f} seconds")
+    # print(f"Total time taken: {time.time() - t_start:.2f} seconds")
+
+    from bioinspired.data import Individual
+
+    # Obtain a good solution
+    candidate = Individual.get_by_id(
+        4356
+    )  # Assuming the first individual is a good candidate
+    print(candidate)
+    print(f"Candidate fitness: {problem.fitness(candidate.chromosome)}")
+
     return problem
 
 
