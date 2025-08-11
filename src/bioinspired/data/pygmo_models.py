@@ -329,123 +329,6 @@ class Archipelago(PyGMOBase):
         with cls.get_session_context_class() as session:
             return _create_archipelago(session)
 
-    def create_islands(
-        self,
-        algorithm_type: str = "sga",
-        algorithm_parameters: Dict = None,
-        session: Optional[Session] = None,
-    ) -> List["Island"]:
-        """
-        Create island records for this archipelago.
-        """
-
-        def _create_islands(session: Session) -> List["Island"]:
-            islands = []
-            for i in range(self.num_islands):
-                island = Island(
-                    archipelago_id=self.id,
-                    island_index=i,
-                    initial_population_size=self.population_per_island,
-                    algorithm_type=algorithm_type,
-                    algorithm_parameters=algorithm_parameters or {},
-                    status=STATUS.INITIALIZED.value,
-                    generations_completed=0,
-                )
-                islands.append(island)
-                session.add(island)
-
-            session.commit()
-            for island in islands:
-                session.refresh(island)
-                session.expunge(island)
-            return islands
-
-        if session is not None:
-            return _create_islands(session)
-        else:
-            with self.get_session_context() as session:
-                return _create_islands(session)
-
-    def update_migration_event(
-        self, migration_number: int, session: Optional[Session] = None
-    ):
-        """
-        Update the current migration event for cross-process communication.
-        """
-
-        def _update_migration(session: Session):
-            self.current_migration_event = migration_number
-            session.add(self)
-            session.commit()
-            session.expunge(self)
-
-        if session is not None:
-            _update_migration(session)
-        else:
-            with self.get_session_context() as session:
-                _update_migration(session)
-
-    def get_islands(self, session: Optional[Session] = None) -> List["Island"]:
-        """Get all islands for this archipelago."""
-
-        def _get_islands(session: Session) -> List["Island"]:
-            island_list = (
-                session.query(Island).filter(Island.archipelago_id == self.id).all()
-            )
-            # Detach all objects from session
-            for island in island_list:
-                session.expunge(island)
-            return island_list
-
-        if session is not None:
-            return _get_islands(session)
-        else:
-            with self.get_session_context() as session:
-                return _get_islands(session)
-
-    def get_all_individuals(
-        self, session: Optional[Session] = None
-    ) -> List["Individual"]:
-        """Get all individuals for this archipelago."""
-
-        def _get_individuals(session: Session) -> List["Individual"]:
-            individual_list = (
-                session.query(Individual)
-                .filter(Individual.archipelago_id == self.id)
-                .all()
-            )
-            # Detach all objects from session
-            for individual in individual_list:
-                session.expunge(individual)
-            return individual_list
-
-        if session is not None:
-            return _get_individuals(session)
-        else:
-            with self.get_session_context() as session:
-                return _get_individuals(session)
-
-    def get_champions(self, session: Optional[Session] = None) -> List["Individual"]:
-        """Get all champion individuals for this archipelago."""
-
-        def _get_champions(session: Session) -> List["Individual"]:
-            champion_list = (
-                session.query(Individual)
-                .filter(Individual.archipelago_id == self.id, Individual.is_champion)
-                .all()
-            )
-            # Detach all objects from session
-            for champion in champion_list:
-                session.expunge(champion)
-            return champion_list
-
-        if session is not None:
-            return _get_champions(session)
-        else:
-            with self.get_session_context() as session:
-                return _get_champions(session)
-
-
 class Island(PyGMOBase):
     """
     Represents an individual island in the archipelago.
@@ -505,6 +388,12 @@ class Individual(PyGMOBase):
     generation_number = Column(
         Integer, nullable=False
     )  # Which generation this individual belongs to
+    migration_event = Column(
+        Integer, nullable=False
+    )  # Migration event number (0, 1, 2, etc.)
+    total_generation = Column(
+        Integer, nullable=False
+    )  # Total generation number across all migrations, product of migration event and generation number
 
     # Individual data
     chromosome = Column(JSON, nullable=False)  # Neural network weights as array
