@@ -16,20 +16,25 @@ from tudatpy.numerical_simulation.environment_setup import (
     BodyListSettings,
 )
 
-from .simulation_base import SimulatorBase
-from bioinspired.spacecraft import SimpleCraft
+from .simulation_base import SimulationBase
 
 
-class EmptyUniverseSimulator(SimulatorBase):
+class EmptyUniverseSimulator(SimulationBase):
     """Empty Universe Simulator class.
 
     This class provides an empty universe simulation environment with no gravitational bodies.
     It inherits from the base simulator class and implements the required methods.
     """
 
-    @override
-    def __init__(self):
-        super().__init__()
+    def __init__(
+        self,
+        tolerance: float = 1e-6,
+        initial_timestep: float = 0.1,
+        **kwargs,
+    ):
+        self._tolerance = tolerance
+        self._initial_timestep = initial_timestep
+        super().__init__(**kwargs)
 
     @override
     def _get_central_body(self) -> list[str]:
@@ -40,20 +45,59 @@ class EmptyUniverseSimulator(SimulatorBase):
         """Return the integrator settings object."""
         # Create numerical integrator settings.
         if self._integrator is None:
-            fixed_step_size = 10.0
-            self._integrator = integrator.runge_kutta_fixed_step(
-                fixed_step_size,
-                coefficient_set=integrator.CoefficientSets.rk_4,
+            block_indices = [
+                (0, 0, 3, 1),
+                (3, 0, 3, 1),
+                (6, 0, 4, 1),
+                (10, 0, 3, 1),
+            ]
+            step_size_control = integrator.step_size_control_blockwise_scalar_tolerance(
+                block_indices, self._tolerance, self._tolerance
+            )
+
+            # Create step size validation settings
+            step_size_validation = integrator.step_size_validation(
+                minimum_step=1e-4, maximum_step=1
+            )
+
+            self._integrator = integrator.bulirsch_stoer_variable_step(
+                initial_time_step=self._initial_timestep,
+                extrapolation_sequence=integrator.ExtrapolationMethodStepSequences.deufelhard_sequence,
+                maximum_number_of_steps=4,
+                step_size_control_settings=step_size_control,
+                step_size_validation_settings=step_size_validation,
+                assess_termination_on_minor_steps=False,
             )
         return self._integrator
 
     @override
     def _dump_integrator_settings(self) -> str:
         """Dump the integrator settings to a string representation in a JSON format."""
-        return json.dumps({"step_size": 10.0, "type": "RK4"})
+
+        return json.dumps(
+            {
+                "block_indices": [
+                    (0, 0, 3, 1),
+                    (3, 0, 3, 1),
+                    (6, 0, 4, 1),
+                    (10, 0, 3, 1),
+                ],
+                "step_size_control": "step_size_control_blockwise_scalar_tolerance",
+                "step_size_validation": {
+                    "minimum_step": 1e-4,
+                    "maximum_step": 10000,
+                },
+                "integrator_type": "bulirsch_stoer_variable_step",
+                "initial_time_step": self._initial_timestep,
+                "extrapolation_sequence": "deufelhard_sequence",
+                "maximum_number_of_steps": 4,
+                "assert_termination_on_minor_steps": False,
+                "tolerance": self._tolerance,
+            }
+        )
 
     @override
-    def _get_body_model(self) -> SystemOfBodies:
+    def get_body_model(self) -> SystemOfBodies:
         """Return the body model object."""
         # Create an empty body model.
         if self._body_model is None:
@@ -69,6 +113,8 @@ class EmptyUniverseSimulator(SimulatorBase):
 
 def main():
     """Main function to test the empty universe simulation."""
+    from bioinspired.spacecraft import SimpleCraft
+
     # Load spice kernels
     spice.load_standard_kernels()
 
@@ -82,7 +128,7 @@ def main():
 
     # Check all bodies in the system
     print("Bodies in the system:")
-    for body in simulator._get_body_model().list_of_bodies():
+    for body in simulator.get_body_model().list_of_bodies():
         print(f" - {body}")
 
     # Check the spacecraft's acceleration settings

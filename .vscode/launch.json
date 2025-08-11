@@ -1,0 +1,73 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Lander 2 Playground",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.bioinspired.apps.lander_2_playground",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+                "CONDA_DEFAULT_ENV": "tudat-space"
+            },
+            "justMyCode": true
+        },
+        {
+            "name": "Endurance Ephemeris playground",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.bioinspired.apps.endurance_ephemeris_playground",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+                "CONDA_DEFAULT_ENV": "tudat-space"
+            },
+            "justMyCode": true
+        },
+        {
+            "name": "Debug Configuration Test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/test_debug.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+                "CONDA_DEFAULT_ENV": "tudat-space"
+            },
+            "justMyCode": false
+        },
+        {
+            "name": "Run Single Trajectory Simulation",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.bioinspired.apps.run_single_trajectory",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+                "CONDA_DEFAULT_ENV": "tudat-space"
+            },
+            "justMyCode": true
+        },
+        {
+            "name": "Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+                "CONDA_DEFAULT_ENV": "tudat-space"
+            },
+            "justMyCode": false
+        }
+    ]
+}

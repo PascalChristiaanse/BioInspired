@@ -1,3 +1,5 @@
+*.png
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -213,7 +215,8 @@ data/trajectories/*.h5
 logs/
 
 # IDE specific
-.vscode/
+.vscode/*
+!.vscode/launch.json
 .idea/
 *.swp
 *.swo

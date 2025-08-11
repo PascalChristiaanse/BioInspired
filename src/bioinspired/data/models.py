@@ -5,6 +5,7 @@ Database models for the BioInspired evolutionary docking project.
 from sqlalchemy import (
     Column,
     Integer,
+    BigInteger,
     String,
     Text,
     DateTime,
@@ -90,7 +91,7 @@ class Trajectory(Base):
     dynamics_simulator = Column(JSON, nullable=True)  # Store simulator as a dict/JSON
     initial_state = Column(JSON, nullable=True)  # Initial state of the spacecraft
     number_of_function_evaluations = Column(
-        Integer, nullable=True
+        BigInteger, nullable=True
     )  # Number of function evaluations
     total_cpu_time = Column(Float, nullable=True)  # Total CPU time used
     termination_reason = Column(String(255), nullable=True)

@@ -8,4 +8,6 @@ __all__ = [
     "simulation",
     "spacecraft",
     "visualization",
+    "problem",
+    "controller",
 ]

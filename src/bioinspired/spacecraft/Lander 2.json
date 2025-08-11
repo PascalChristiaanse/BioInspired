@@ -1,0 +1,220 @@
+{
+  "spacecraft_name": "Lander 2",
+  "version": "1.0",
+  "dry_mass": 60000.0,
+  "fuel_mass": 20000.0,
+  "inertia_tensor": [
+    [2.25e6, 0.0, 0.0],
+    [0.0, 2.25e6, 0.0],
+    [0.0, 0.0, 4.5e6]
+  ],
+  "center_of_mass": [0.0, 0.0, 0.0],
+  "engines": [    {
+      "id": "rcs_1",
+      "type": "rcs",
+      "location": [-6.5, 6.25, 0.0],
+      "thrust_direction": [1.0, 0.0, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_2",
+      "type": "rcs",
+      "location": [-6.5, 6.25, 0.0],
+      "thrust_direction": [0.0, -1.0, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_3",
+      "type": "rcs",
+      "location": [-6.5, 6.25, 0.0],
+      "thrust_direction": [0.0, 0.0, -1.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_4",
+      "type": "rcs",
+      "location": [-6.5, 6.25, -3.5],
+      "thrust_direction": [0.0, 0.0, 1.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_5",
+      "type": "rcs",
+      "location": [6.5, 6.25, 0.0],
+      "thrust_direction": [-1.0, 0.0, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_6",
+      "type": "rcs",
+      "location": [6.5, 6.25, 0.0],
+      "thrust_direction": [0.0, -1.0, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_7",
+      "type": "rcs",
+      "location": [6.5, 6.25, 0.0],
+      "thrust_direction": [0.0, 0.0, -1.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_8",
+      "type": "rcs",
+      "location": [6.5, 6.25, -3.5],
+      "thrust_direction": [0.0, 0.0, 1.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_9",
+      "type": "rcs",
+      "location": [6.5, -6.25, 0.0],
+      "thrust_direction": [0.0, 1.0, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_10",
+      "type": "rcs",
+      "location": [6.5, -6.25, 0.0],
+      "thrust_direction": [-1.0, 0.0, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_11",
+      "type": "rcs",
+      "location": [6.5, -6.25, 0.0],
+      "thrust_direction": [0.0, 0.0, -1.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_12",
+      "type": "rcs",
+      "location": [6.5, -6.25, -3.5],
+      "thrust_direction": [0.0, 0.0, 1.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_13",
+      "type": "rcs",
+      "location": [-6.5, -6.25, 0.0],
+      "thrust_direction": [1.0, 0.0, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_14",
+      "type": "rcs",
+      "location": [-6.5, -6.25, 0.0],
+      "thrust_direction": [0.0, 1.0, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_15",
+      "type": "rcs",
+      "location": [-6.5, -6.25, 0.0],
+      "thrust_direction": [0.0, 0.0, -1.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_16",
+      "type": "rcs",
+      "location": [-6.5, -6.25, -3.5],
+      "thrust_direction": [0.0, 0.0, 1.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_17",
+      "type": "rcs",
+      "location": [-6.75, -4.0, 0.0],
+      "thrust_direction": [1.0, 0.0, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_18",
+      "type": "rcs",
+      "location": [-6.75, -4.0, 0.0],
+      "thrust_direction": [4.0, -6.75, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_19",
+      "type": "rcs",
+      "location": [-6.75, 4.0, 0.0],
+      "thrust_direction": [4.0, 6.75, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_20",
+      "type": "rcs",
+      "location": [-6.75, 4.0, 0.0],
+      "thrust_direction": [1.0, 0.0, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_21",
+      "type": "rcs",
+      "location": [6.75, 4.0, 0.0],
+      "thrust_direction": [-1.0, 0.0, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_22",
+      "type": "rcs",
+      "location": [6.75, 4.0, 0.0],
+      "thrust_direction": [-4.0, 6.75, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_23",
+      "type": "rcs",
+      "location": [6.75, -4.0, 0.0],
+      "thrust_direction": [-4.0, -6.75, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    },
+    {
+      "id": "rcs_24",
+      "type": "rcs",
+      "location": [6.75, -4.0, 0.0],
+      "thrust_direction": [-1.0, 0.0, 0.0],
+      "maximum_thrust": 30000,
+      "specific_impulse": 315.0
+    }
+  ],
+  "metadata": {
+    "created_date": "2025-07-12",
+    "author": "Pascal Christiaanse",
+    "description": "Configuration file for Lander 2 spacecraft based on the movie Interstellar (2014)",
+    "units": {
+      "mass": "kg",
+      "length": "m",
+      "force": "N",
+      "time": "s",
+      "power": "W",
+      "temperature": "C",
+      "specific_impulse": "s",
+      "frequency": "Hz"
+    }
+  }
+}

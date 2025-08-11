@@ -17,18 +17,6 @@ from .database import get_session_context
 from .models import Simulation, Spacecraft, Trajectory
 
 
-# try:
-#     from bioinspired.simulation.simulation_base import SimulatorBase
-#     from bioinspired.spacecraft.spacecraft_base import SpacecraftBase
-# except ImportError as e:
-#     from src.bioinspired.simulation.simulation_base import SimulatorBase
-#     from src.bioinspired.spacecraft.spacecraft_base import SpacecraftBase
-# except Exception as e:
-#     raise ImportError(
-#         "Ensure the 'bioinspired' package is installed and accessible. "
-#         f"Error: {e}"
-#     )
-
 def serialize_numpy_array(arr: np.ndarray) -> List[float]:
     """Convert numpy array to JSON-serializable list."""
     return arr.flatten().tolist()
@@ -218,7 +206,7 @@ def save_spacecraft(
 
     def _save_craft(session: Session) -> Spacecraft:
         # Serialize initial state
-        initial_state_data = serialize_numpy_array(spacecraft._initial_state)
+        initial_state_data = serialize_numpy_array(spacecraft._translational_state)
 
         # Use new dump methods for better serialization
         try:
