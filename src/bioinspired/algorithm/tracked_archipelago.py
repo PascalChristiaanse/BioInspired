@@ -60,7 +60,7 @@ class TrackedArchipelago:
         self.migration_events = migration_events
         self.seed = pop.get_seed()
         self.archipelago_record: Archipelago = Archipelago(
-            name="Tracked Archipelago",
+            name=str(self.algo_type).split(".")[-1].replace("'>", "").upper(),
             problem_class=pop.problem.get_name(),
             num_islands=num_islands,
             population_per_island=len(pop) / num_islands,
