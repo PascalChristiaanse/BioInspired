@@ -11,6 +11,7 @@ from .pygmo_models import (
     Archipelago,
     Island,
     Individual,
+    PyGMOBase
 )
 from .database import get_session, get_session_context, create_tables
 from .services import (
@@ -35,6 +36,7 @@ __all__ = [
     "Archipelago",
     "Island",
     "Individual",
+    "PyGMOBase",
     # Database functions
     "get_session",
     "get_session_context",
