@@ -150,9 +150,7 @@ def run_archipelago_optimization(seed=42):
         for i in range(num_islands):
             algo = pg.algorithm(
                 TelemetrySGA(
-                    island_id=i,
                     generations=generations_per_migration_event,
-                    gen=generations_per_migration_event,
                     cr=0.95,  # JLeitner (2010)
                     m=0.01,  # JLeitner (2010)
                     seed=seed,
