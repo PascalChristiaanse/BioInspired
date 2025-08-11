@@ -95,6 +95,80 @@ class JLeitner2010(CostFunctionBase):
             )
 
 
+class JLeitner2010wAngularVelocity(JLeitner2010):
+    """Cost function based on Leitner, J., Ampatzis, C., & Izzo, D. (2010).
+    Evolving ANNs for spacecraft rendezvous and docking, with angular velocity considerations.
+    This is a variant of the JLeitner2010 cost function that includes angular velocity in the cost calculation.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.docking_tolerance_angular_velocity = 0.1
+
+    @override
+    def cost(self, parameters: dict[str, dict[float, np.array]]) -> float:
+        """Cost function based on rendevous approach and docking requirements."""
+
+        required_keys = [
+            "relative_distance",
+            "relative_speed",
+            "orientation_matrix_A",
+            "orientation_matrix_B",
+            "angular_velocity_A",
+            "angular_velocity_B",
+        ]
+
+        for key in required_keys:
+            if key not in parameters:
+                raise ValueError(f"Missing required key: {key}")
+
+        final_time = max(parameters["relative_distance"].keys())
+
+        # Get state error at final time
+        position_error = parameters["relative_distance"][final_time]
+        velocity_error = parameters["relative_speed"][final_time]
+
+        # Get orientation error at final time
+        final_orientation_A = parameters["orientation_matrix_A"][final_time]
+        final_orientation_B = parameters["orientation_matrix_B"][final_time]
+
+        # Convert rotation matrices to Euler angles (e.g., 'xyz' convention)
+        euler_A = R.from_matrix(final_orientation_A).as_euler("xyz")
+        euler_B = R.from_matrix(final_orientation_B).as_euler("xyz")
+
+        # Compute orientation error as norm of angle difference
+        orientation_error = np.linalg.norm(euler_A - euler_B)
+
+        # Get angular velocity at final time
+        angular_velocity_A = parameters["angular_velocity_A"][final_time]
+        angular_velocity_B = parameters["angular_velocity_B"][final_time]
+
+        # Compute angular velocity error as norm of difference
+        angular_velocity_error = np.linalg.norm(angular_velocity_A - angular_velocity_B)
+
+        # Compute constraints
+        if (
+            orientation_error < self.docking_tolerance_orientation
+            and angular_velocity_error < self.docking_tolerance_angular_velocity
+            and position_error < self.docking_tolerance_position
+            and velocity_error < self.docking_tolerance_velocity
+        ):
+            constraints_met = True
+        else:
+            constraints_met = False
+
+        # Calculate cost
+        if constraints_met:
+            return 1 + (self.t_max - final_time) / self.t_max
+        else:
+            return 1 / (
+                (1 + orientation_error)
+                * (1 + position_error)
+                * (1 + velocity_error)
+                * (1 + angular_velocity_error)
+            )
+
+
 class JLeitner2010NoStopNeuron(JLeitner2010):
     """Cost function based on Leitner, J., Ampatzis, C., & Izzo, D. (2010).
     Evolving ANNs for spacecraft rendezvous and docking, without the stop neuron.
