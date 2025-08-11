@@ -11,28 +11,40 @@ from bioinspired.algorithm import (
     SliceablePopulation,
 )
 from bioinspired.data import PyGMOBase
+import logging
+import os
+import sys
+import winsound
+
 
 def setup_logging():
     """Set up logging configuration for the application."""
-    import logging
+
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     logger = logging.getLogger(__name__)
     return logger
+
 
 def main():
     """
     Main function to run the archipelago solver.
     Initializes the archipelago with specified parameters and runs the evolution process.
     """
+    if sys.platform.startswith("win"):
+        winsound.PlaySound("SystemExclamation", winsound.SND_ALIAS)    
+    else:
+        # For Unix-like systems, print the ASCII bell character
+        print("\a")
+
     logger = setup_logging()
     logger.info("Starting Archipelago Solver")
     
     logger.info("Creating initial population")
     initial_population = SliceablePopulation(
-        prob=Problem(),
+        prob=Problem(stop_threshold=0.9),
         b=pg.mp_bfe(),
         size=8 * 16,  # Initial population size
         seed=42,  # Seed for reproducibility
@@ -61,7 +73,12 @@ def main():
     logger.info("Starting evolution process")
     archipelago.evolve()
     logger.info("Evolution process completed")
-    
+    # Play a chime sound when the program finishes
+    if sys.platform.startswith("win"):
+        winsound.PlaySound("SystemExit", winsound.SND_ALIAS)    
+    else:
+        # For Unix-like systems, print the ASCII bell character
+        print("\a")
 
 
 if __name__ == "__main__":
