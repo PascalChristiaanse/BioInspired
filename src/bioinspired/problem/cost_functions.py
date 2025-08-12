@@ -6,11 +6,32 @@ References:
 from __future__ import annotations
 
 import numpy as np
+import numba as nb
 from abc import ABC, abstractmethod
 from overrides import override
 
 from tudatpy.numerical_simulation.propagation import SingleArcSimulationResults
-from scipy.spatial.transform import Rotation as R
+
+
+@nb.jit(nopython=True, cache=True)
+def rotation_matrix_to_euler_angles(rotation_matrix):
+    """Convert a rotation matrix to Euler angles (roll, pitch, yaw)."""
+    sy = np.sqrt(
+        rotation_matrix[0, 0] * rotation_matrix[0, 0]
+        + rotation_matrix[1, 0] * rotation_matrix[1, 0]
+    )
+    singular = sy < 1e-6
+
+    if not singular:
+        x = np.arctan2(rotation_matrix[2, 1], rotation_matrix[2, 2])
+        y = np.arctan2(-rotation_matrix[2, 0], sy)
+        z = np.arctan2(rotation_matrix[1, 0], rotation_matrix[0, 0])
+    else:
+        x = np.arctan2(-rotation_matrix[1, 2], rotation_matrix[1, 1])
+        y = np.arctan2(-rotation_matrix[2, 0], sy)
+        z = 0
+
+    return np.array([x, y, z])
 
 
 class CostFunctionBase(ABC):
@@ -70,8 +91,8 @@ class JLeitner2010(CostFunctionBase):
         final_orientation_B = parameters["orientation_matrix_B"][final_time]
 
         # Convert rotation matrices to Euler angles (e.g., 'xyz' convention)
-        euler_A = R.from_matrix(final_orientation_A).as_euler("xyz")
-        euler_B = R.from_matrix(final_orientation_B).as_euler("xyz")
+        euler_A = rotation_matrix_to_euler_angles(final_orientation_A)
+        euler_B = rotation_matrix_to_euler_angles(final_orientation_B)
 
         # Compute orientation error as norm of angle difference
         orientation_error = np.linalg.norm(euler_A - euler_B)
@@ -133,8 +154,8 @@ class JLeitner2010wAngularVelocity(JLeitner2010):
         final_orientation_B = parameters["orientation_matrix_B"][final_time]
 
         # Convert rotation matrices to Euler angles (e.g., 'xyz' convention)
-        euler_A = R.from_matrix(final_orientation_A).as_euler("xyz")
-        euler_B = R.from_matrix(final_orientation_B).as_euler("xyz")
+        euler_A = rotation_matrix_to_euler_angles(final_orientation_A)
+        euler_B = rotation_matrix_to_euler_angles(final_orientation_B)
 
         # Compute orientation error as norm of angle difference
         orientation_error = np.linalg.norm(euler_A - euler_B)
@@ -207,8 +228,8 @@ class JLeitner2010NoStopNeuron(JLeitner2010):
             final_orientation_B = parameters["orientation_matrix_B"][time]
 
             # Convert rotation matrices to Euler angles (e.g., 'xyz' convention)
-            euler_A = R.from_matrix(final_orientation_A).as_euler("xyz")
-            euler_B = R.from_matrix(final_orientation_B).as_euler("xyz")
+            euler_A = rotation_matrix_to_euler_angles(final_orientation_A)
+            euler_B = rotation_matrix_to_euler_angles(final_orientation_B)
 
             # Compute orientation error as norm of angle difference
             orientation_error = np.linalg.norm(euler_A - euler_B)
