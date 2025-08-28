@@ -1,4 +1,6 @@
-\documentclass[whitelogo,oneside]{TUD-report2020}
+\documentclass[oneside]{TUD-report2020}
+\usepackage{csquotes}
+
 
 \usepackage[style=apa]{biblatex}
 \addbibresource{ref.bib}
@@ -60,12 +62,18 @@
 %% Use Arabic numerals for the page numbers of the chapters.
 \mainmatter
 
-\input{chapter-1}
-
+\input{chapters/introduction}
+\input{chapters/theory}
+\input{chapters/method}
+\input{chapters/validation}
+\input{chapters/results}
+\input{chapters/conclusion}
 %% Use letters for the chapter numbers of the appendices.
 \appendix
 
-%\input{appendix-a}
+\input{chapters/symbols}
+\input{chapters/reference-frames}
+\input{chapters/abbreviations.tex}
 
 \printbibliography
 
