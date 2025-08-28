@@ -273,3 +273,4 @@ venv/
 *.bcf
 _build/
 latex.out/
+*SAVE-ERROR*
