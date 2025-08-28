@@ -1,0 +1,64 @@
+\chapter{Neural Network Training}
+
+\section{Simulation Environment Development and Validation}
+% Brief: Tudat setup, validation using standard numerical practices (Richardson's extrapolation for timestep setting)
+
+\section{Problem Formulation and Complexity Progression}
+\subsection{Initial Problem: Straight-Line Translation}
+% Started with basic problem where spacecraft moves in straight line to target point
+
+\subsection{Extended Problem: Diagonal Movement}
+% Extended to diagonal movement - both SGA and SEA failed to learn this
+
+\subsection{Advanced Problem: Rotation and Combined Maneuvers}
+% Full docking problem with rotation - most challenging scenario
+
+% Notes: Detailed explanation of the docking problem 
+%        - Why restrict it to the inplane case
+
+\section{Algorithm Evolution and Selection}
+\subsection{Initial Approaches: SGA and SEA}
+% SGA then SGA with island model - both proved ineffective for topology discovery
+% SEA with island model also failed on diagonal movement problem
+
+% Notes: - Mention that a seed DOES NOT mean reproducability due to migration; processes do not finish at the same time and this behavior is not determined by a seed, but by "truly" random behavior, how busy is each processor core etc. I had spotify running come on
+
+\subsection{Transition to NEAT}
+% Implemented NEAT due to uncertainty about optimal network topology
+% Varying neuron count didn't help with SGA/SEA, didn't want to blow up search space with layer variations
+% NEAT got closer to solving diagonal problem but still struggled initially
+
+\section{Cost Function Development}
+\subsection{Initial Cost Function Design}
+% Basic cost function used with SGA/SEA and initial NEAT attempts
+
+\subsection{Cost Function Refinement and Shaping Rewards}
+% Updated cost function and added shaping rewards - breakthrough moment
+% After this, NEAT could solve non-rotating target problems
+
+% Notes: - Explain the fitness functions used (Comes from optimal control + penalty functions + shaping reward functions) (penalties and rewards applied empirically)
+
+\section{Learning Strategy Evolution}
+\subsection{Direct Learning Approach}
+% Initial attempts: all runs started with empty networks
+% Failed for rotating targets - too complex to learn directly
+
+\subsection{Curriculum Learning Implementation}
+% Discovered curriculum learning necessity through experimentation
+% Helped significantly but time constraints limited further exploration
+
+% Notes: - Explain the curriculum
+%        - First straight line, then diagonal, then pure rotation, then combined slow rotation and translation, then finally the full problem
+
+\section{Implementation Details}
+\subsection{Simulation Environment}
+% Notes: - Explain the simulation environment
+%        - Explain use of interpolators -> speeds up simulation because we are not simulating two spacecraft. Major downside: no stochastic problems meaning overfitting is a risk -> this is probably what happened leading to a pretty shit network, eventhough it does work
+
+\subsection{Spacecraft Model}
+% Notes: - explain the spacecraft model used (parameters taken from Lander 2, endurance)
+
+\subsection{State Vector and Control Architecture}
+% Notes: - Explain the state vector
+%        - Explain control mixing
+%        - why not directly map neural output to thrusters: asymmetry, will take ages to learn moving in a straigth line; downsides would be no differential thrust steering, etc
