@@ -1,0 +1,75 @@
+\section{Goal}
+The goal of this study is to recreate the docking scene from the movie
+\textit{Interstellar} using a evolutionary algorithm evolving a neural network,
+able to control a spacecraft in a simulated environment.
+
+
+
+ Title ideas:
+ Solving the AR&D problem in Christopher Nolans "Interstellar"; 
+A NEAT solution to the AR&D problem in Christopher Nolans "Interstellar" 
+ A NEAT Solution to Christopher Nolan's "Interstellar" AR&D Problem
+ Evolving a Neural Network to solve the AR&D problem in Christopher Nolan's "Interstellar"
+ 
+
+
+ Chapters
+ Abstract
+ symbols
+ reference frames
+ Introduction
+   Why is this work relevant? may seem just funny (which it is), but has real applications: if you can dock with space debris, it becomes alot easier to deorbit, or possibly atleast stabilize/detumble. Interstellar provides a really nice scenario to work with, and alot of people are familiar with it.
+   - Briefly explain the AR&D problem in Interstellar
+   - Briefly explain the relevance of the AR&D problem
+   - Briefly explain the approach taken in this work
+ Theory
+   - Briefly explain simple genetic algorithms with island models
+       - i used this at first, but it proved to ineffective (hard to guess a neural network topology)
+     - explain NEAT (perhaps mention the libraries great checkpointing feature), and why it is better suited for this problem
+     - Explain curriculum learning + why i used it
+ Method
+   - Detailed explanation of the docking problem 
+       - Why restrict it to the inplane case
+   - Explain SGA, then SGA with island model; hint that it was ineffective and then switch to NEAT setup explanation
+       - Mention that a seed DOES NOT mean reproducability due to migration; processes do not finish at the same time and this behavior is not determined by a seed, but by "truly" random behavior, how busy is each processor core etc. I had spotify running come on
+   - Explain the fitness functions used (Comes from optimal control + penalty functions + shaping reward functions) (penalties and rewards applied empirically)
+   - Explain the curriculum
+       - First straight line, then diagonal, then pure rotation, then combined slow rotation and translation, then finally the full problem
+   - Explain the simulation environment
+   - Explain use of interpolators -> speeds up simulation because we are not simulating two spacecraft. Major downside: no stochastic problems meaning overfitting is a risk -> this is probably what happened leading to a pretty shit network, eventhough it does work
+   - explain the spacecraft model used (parameters taken from Lander 2, endurance
+   - Explain the state vector
+   - Explain control mixing
+       - why not directly map neural output to thrusters: asymmetry, will take ages to learn moving in a straigth line; downsides would be no differential thrust steering, etc
+   
+   Multiprocessing
+   
+   
+   
+   
+ Results
+   - Show the results of the SGA with island model (and why it was not effective)
+   - Show the results of the NEAT algorithm
+ Validation
+   - integrator validation (tudat)
+   - interpolator validation
+   - Solution validation, compare to movie scene, apply in different scenarios
+ 
+ 
+ Should mention somewhere:
+   Examining the topology of the best neural network, there is not really a logical structure.
+   A different curriculum would probably yield better results for example:
+       - Stochastic pure rotation case so it learns pointing towards the target
+       - Stochastic translation case so it learns to approach the target
+       - Stochastic combined case
+       - In place docking case, no alignment requirements but just matching rotation
+       - Possibly concurrently and then crossover:
+          - In place match orientation
+          - translated and match rotation speed
+       - Crossover? now translated, rotation speed, and orientation.
+       
+ 
+ 
+ 
+ X. Other ideas
+   - with more work, perhaps it could control something like the EKV or Exoatmospheric kill vehicle by Raytheon, possibly for deorbiting (tumbling) space debris. 
