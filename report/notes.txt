@@ -1,3 +1,11 @@
+
+Todo:
+- add thruster diagram/table
+- add sga sensitivity analysis run table and fitness progression graphs
+- show improved learning rate with better cost function
+- 
+
+
 \section{Goal}
 The goal of this study is to recreate the docking scene from the movie
 \textit{Interstellar} using a evolutionary algorithm evolving a neural network,
@@ -73,3 +81,4 @@ A NEAT solution to the AR&D problem in Christopher Nolans "Interstellar"
  
  X. Other ideas
    - with more work, perhaps it could control something like the EKV or Exoatmospheric kill vehicle by Raytheon, possibly for deorbiting (tumbling) space debris. 
+
