@@ -1,16 +1,40 @@
 \chapter{Conclusion}
 
-%    Examining the topology of the best neural network, there is not really a logical structure.
-%    A different curriculum would probably yield better results for example:
-%        - Stochastic pure rotation case so it learns pointing towards the target
-%        - Stochastic translation case so it learns to approach the target
-%        - Stochastic combined case
-%        - In place docking case, no alignment requirements but just matching rotation
-%        - Possibly concurrently and then crossover:
-%           - In place match orientation
-%           - translated and match rotation speed
-%        - Crossover? now translated, rotation speed, and orientation.
 
-\section{Further Research}
+% it might also be an idea to use an online learning hybrid approach, but this would require a supervisor for example in the form of an optimal controller. Frankly too hard for me right now.
+%    A different curriculum would probably yield better results for example:
+
+% \section{Further Research}
 %    - with more work, perhaps it could control something like the EKV or Exoatmospheric kill vehicle by Raytheon, possibly for deorbiting (tumbling) space debris. 
 % 
+
+This work investigated neuroevolution for AR\&D problems, progressing from basic translational maneuvers to the rotating target scenario from  \textit{Interstellar}. The research demonstrated successful evolution from Simple Genetic Algorithm through island models to NEAT with curriculum learning, achieving partial solution of the complex rotating docking problem.
+
+The progression from straight-line translation (25m) to diagonal movement (10m, 10m) to simplified rotating scenarios established both the feasibility of evolutionary approaches and the importance of problem decomposition through curriculum learning.
+
+\section{Critical Findings}
+
+\subsection{Cost Function Design Impact}
+
+It was shown that a dense reward structure improves the learning rate. The transition from sparse binary rewards to the LQR-based approach with continuous shaping rewards enabled breakthrough performance on multi-axis coordination problems. Networks trained without shaping rewards failed to learn coordinated behaviors, converging instead to single-axis, locally optimal solutions.
+Improving the state vector extraction would likely enhance learning efficiency further, as the current inertial-frame representation limited the networks' ability to learn pointing and co-rotating behaviors effectively.
+
+\subsection{Curriculum Learning Necessity}
+
+Analysis of successful network topologies revealed no obvious logical structure, suggesting emergent rather than interpretable control strategies. 
+
+Direct approaches to the full rotating problem failed consistently across all algorithms tested. The three-stage curriculum progression however (diagonal movement $\rightarrow$ aiming $\rightarrow$ simplified rotating) showed a breakthrough for developing foundational behaviors. Networks trained on a basic curriculum were able to solve a reduced difficulty, yet full scale problem, where networks that did not follow this approach were unable to do so. This shows that by improving the curriculum further, it is likely that the full problem could be solved.
+
+\section{Future Directions}
+A curriculum approach with separate rotation and translation skill development would address the behavioral decomposition limitations. Specific stages could include stochastic pure rotation cases for learning target pointing, stochastic translation cases for approach behaviors, and in-place docking scenarios for rotation matching. Atomizing the docking problem in such a way would improve the maximum achievable fitness, likely leading to a network is able to solve the generalized AR\&D problem \parencite{elman1993learning}. 
+
+Modern evolutionary algorithms and quality-diversity approaches that abandon fitness-only optimization \autocite{lehman2011abandoning} offer potential improvements over the classical NEAT implementation.
+% using body-frame relative position and velocity, line-of-sight azimuth and elevation angles, and explicit docking phase information  facilitate learning of pointing and co-rotating behaviors.
+
+% \subsection{Applications}
+
+% The developed approach could extend to space debris deorbiting missions, tumbling target capture scenarios, and eventually full 6-DOF docking problems. With enhanced curriculum design and modern algorithms, the method could potentially control systems like exoatmospheric kill vehicles for debris removal applications.
+
+% \section{Further Research}
+
+% Future work should prioritize implementing body-frame state representations and stochastic training environments to improve behavioral learning and generalization. Investigation of modern evolutionary algorithms and quality-diversity approaches would likely yield superior performance compared to the classical NEAT implementation used in this study. 
