@@ -1,4 +1,4 @@
-*.png
+src/*.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -274,3 +274,4 @@ venv/
 _build/
 latex.out/
 *SAVE-ERROR*
+*Zone.Identifier
