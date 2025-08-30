@@ -1,81 +1,80 @@
-\documentclass[oneside]{TUD-report2020}
-\usepackage{csquotes}
+\documentclass{tudelft-report}
 
-
-\usepackage[style=apa]{biblatex}
+%% Set up the bibliography
+\usepackage[style=apa,backend=biber]{biblatex}
+\DeclareLanguageMapping{english}{english-apa}
 \addbibresource{ref.bib}
 
-\usepackage{changes}
+%% Additional packages and commands
+\usepackage{parskip}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\setlist{itemsep=-2pt} % Reducing white space in lists slightly
+\renewcommand{\deg}{\si{\degree}\xspace} % Use \deg easily, everywhere
+
+% Add float barriers
+\usepackage{placeins}
+
+%% ----------------------------------------------------------------------
+%%    Begin of document + Frontmatter (Roman page numbering)
+%% ----------------------------------------------------------------------
+
 \begin{document}
 
-%% Use Roman numerals for the page numbers of the title pages and table of
-%% contents.
 \frontmatter
 
-%% Uncomment following 19 lines for a cover with a picture on the lower half only
-%\title[tudelft-white]{Title}
-%\subtitle[tudelft-cyan]{Optional subtitle}
-%\author[tudelft-white]{J.\ Random Author}
-%\affiliation{Technische Universiteit Delft}
-%\coverimage{cover.jpg}
-%\titleoffsetx{10cm}
-%\titleoffsety{10cm}
-%\afiloffsetx{1cm}
-%\afiloffsety{18cm}
-%\covertext[tudelft-white]{
-%    \textbf{Cover Text} \\
-%    possibly \\
-%    spanning 
-%    multiple 
-%    lines
-%    \vfill
-%    ISBN 000-00-0000-000-0
-%}
-%\makecover
-
-%% Uncomment following 16 lines for a cover with a picture on the lower half only
-\title{Evolving a Neural Network to solve the AR\&D problem in Christopher Nolan's "Interstellar"}
-\subtitle{AE4350 - Final Assignment}
-\author{Pascal B. Christiaanse}
-\affiliation{Technische Universiteit Delft}
-\coverimage{docking_scene.png}
-\covertext{
-    \textbf{Abstract} \\
-    possibly \\
-    spanning \\
-    multiple \\
-    lines
-    \vfill
-    ISBN 000-00-0000-000-0
+%% Define the main parameters
+\title{A NEAT Solution to Christopher Nolan's "Interstellar" AR\&D Problem
 }
-\setpagecolor{tudelft-cyan}
-\makecover[split]
+\subtitle{Evolving a Neural Network for Performing an Automated Docking Procedure.}
+\author{Pascal B. Christiaanse (6101720)} % Cover and title page
 
+\subject{
+AE4350: Bio-inspired Intelligence and learning for Aerospace Applications} % Cover only
+\affiliation{Delft University of Technology} % Cover only
+\coverimage{figures/cover.jpg} % Aspect ratio of 2:3 (portrait) recommended
+\definecolor{title}{HTML}{4884d6} % Color for cover title
 
-%% Include an optional title page.
-% \input{title}
+\makecover
 
-% \input{preface}
+\input{frontmatter/title-report}
+% \input{frontmatter/preface}
+% \input{frontmatter/summary}
 
 \tableofcontents
+%\listoffigures
+%\listoftables
 
-%% Use Arabic numerals for the page numbers of the chapters.
+\input{frontmatter/nomenclature}
+
+%% ----------------------------------------------------------------------
+%%    Mainmatter (Arabic page numbering)
+%% ----------------------------------------------------------------------
+
 \mainmatter
 
 \input{chapters/introduction}
 \input{chapters/theory}
 \input{chapters/method}
-\input{chapters/validation}
 \input{chapters/results}
 \input{chapters/conclusion}
-%% Use letters for the chapter numbers of the appendices.
+
+%% Prevent urls running into margins in bibliography
+\setcounter{biburlnumpenalty}{7000}
+\setcounter{biburllcpenalty}{7000}
+\setcounter{biburlucpenalty}{7000}
+
+%% Add bibliography
+\printbibliography[heading=bibintoc,title=References]
+
+%% ----------------------------------------------------------------------
+%%    Appendix (Letters for chapters)
+%% ----------------------------------------------------------------------
+
 \appendix
 
-\input{chapters/symbols}
-\input{chapters/reference-frames}
-\input{chapters/abbreviations.tex}
-
-\printbibliography
+\input{chapters/reference-frames.tex}
+\input{chapters/symbols.tex}
+% \input{chapters/abbreviations.tex}
 
 \end{document}
-
