@@ -110,13 +110,6 @@ Extended problem (8 inputs): adds travel angle (velocity-to-position alignment) 
 
 Advanced problem (10 inputs): further includes relative distance and speed magnitudes for enhanced situational awareness.
 
-The control architecture maps neural outputs to thruster groups rather than individual thrusters to accelerate learning. Direct thruster mapping would require the network to first learn basic flight mechanics before tackling the docking problem. The grouped approach ensures balanced, symmetric control while reducing the parameter space from 24 to 6 control dimensions.
-
-% \subsection{Simulation Validation}
-% \label{sec:simulation-validation}
-% Integrator validation using Richardson's extrapolation for timestep setting
-% Interpolator validation methods
-
 \section{Problem Formulation and Complexity Progression}
 The autonomous rendezvous and docking problem was formulated as a series of
 increasingly complex scenarios, progressing from basic translational maneuvers
@@ -138,7 +131,7 @@ Z-axis). This reduction decreases the dimensionality of both the state space
 and control space, making the problem significantly easier to solve for an
 artificial neural network (ANN).
 
-\subsection{Initial Problem: Straight-Line Translation}
+\subsection{Basic Problem: Straight-Line Translation}
 
 In the basic problem, Lander 2 must perform a simple translational maneuver
 from the origin $(0, 0)$ to reach the stationary Endurance located at $(25, 0)$
@@ -147,7 +140,7 @@ meters in the inertial frame.
 \subsubsection{Problem Configuration}
 
 The problem is set up based on inspiration from \cite{leitner2010evolving},
-using something called a stop neuron. When the activation of this neuron
+using a stop neuron. When the activation of this neuron
 reaches a threshold, the simulation is terminated; allowing the neural network
 to optimize for time. The control vector available is reduced to 3 neurons: +X
 and -X, as well as the stop neuron, providing pure translational control. The
@@ -217,7 +210,7 @@ The new cost function incorporated shaping rewards to provide continuous feedbac
 \begin{equation}
     J = (\mathbf{x}_{final} - \mathbf{x}_{target})^T P (\mathbf{x}_{final} - \mathbf{x}_{target}) + \int_{0}^{t_{final}} (\mathbf{x}(t) - \mathbf{x}_{target})^T Q (\mathbf{x}(t) - \mathbf{x}_{target}) dt
 \end{equation}
-Where $P$ should be the positive-definite solution of the discrete Riccati equation (DARE equation) for the linearized system, and $Q$ is a positive-definite matrix that weights the state error over time. Matrix $P$ was empirically set to $3*Q$ for simplicity, while $Q$ was set using bryson rule \parencite{bryson2018applied} to normalize the state errors using these weighting factors. The tolerances for position, velocity, and orientation errors remained the same as in the basic problem's docking tolerances, and the tolerance for angular velocity was set to $0.01$ rad/s to push hard for minimizing rotational difference.
+Where $P$ should be the positive-definite solution of the discrete Riccati equation for the linearized system, and $Q$ is a positive-definite matrix that weights the state error over time. Matrix $P$ was empirically set to $3*Q$ for simplicity, while $Q$ was set using \cite{bryson2018applied}'s rule to normalize the state errors using these weighting factors. The tolerances for position, velocity, and orientation errors remained the same as in the basic problem's docking tolerances, and the tolerance for angular velocity was set to $0.01$ rad/s to push hard for minimizing rotational difference.
 \\
 To make the cost function even more dense, shaping rewards as well as penalties were added to encourage intermediate milestones and punish 'cheating' such as spinning in place to reduce angular velocity error without translating. These shaping rewards included:
 \begin{itemize}
@@ -241,8 +234,7 @@ sequence. This formulation required Lander 2 to perform first the translation
 to the docking port, and then a spinup maneuver to match the angular phase and
 velocity of Endurance (although the phase constraint was dropped later to
 reduce complexity). The cost function remained the same as in the extended
-problem, with the addition of various shaping rewards to encourage
-intermediate milestones.
+problem.
 
 \begin{align}
     ||\boldsymbol{\Omega}_{rel}|| < 0.1 \text{ rad/s} \\
