@@ -1,16 +1,47 @@
 \chapter{Introduction}
-% Github link to all the code used in this report:
+
+This report presents the work conducted for the AE4350 Bio-inspired
+Intelligence and Learning for Aerospace Applications assignment. All code and
+data used in this study are available on github at:
+\href{https://github.com/PascalChristiaanse/BioInspired}{PascalChristiaanse/Bioinspired}.
 
 \section{Interstellar's AR\&D Problem}
 
+In Christopher Nolan's 2014 film \textit{Interstellar}, the crew of the
+\textit{Lander 2} spacecraft faces a critical docking challenge with the
+damaged \textit{Endurance} station. After Dr. Mann's failed docking attempt
+around the ice planet, an explosion severely damages the station and sends it
+into an uncontrolled tumbling motion, spinning at approximately 68 rotations
+per minute around its primary axis. With limited fuel and time running out,
+Cooper and the crew aboard Lander 2 must execute a desperate docking maneuver
+to regain control of their only means of reaching Edmunds' planet.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/explosion.png}
+    \caption{The docking scene from \textit{"Interstellar"} (2014) where Lander 2 approaches the tumbling Endurance station. Credit: Paramount Pictures and Warner Bros.}
+    \label{fig:interstellar_docking}
+\end{figure}
+\FloatBarrier
+
+
 \section{Real-World Relevance}
-% Mainly space debris removal, docking would probably be useful
+While the scenario in \textit{Interstellar} is fictional, the underlying
+problem of autonomous docking with a tumbling target has real-world relevance.
+Take for example the loss of the Envisat observatory, which as been inactive
+since 2012. Due to its orbit and mass, it could stay in orbit for another 150
+years, during which it could collide and create a significant debris cloud.
+Being able to rendezvous and dock with this large, likely tumbling body would
+greatly simplify the deorbiting process. As space becomes increasingly
+congested with satellites and debris, the ability for spacecraft to
+autonomously rendezvous and dock with non-cooperative targets could be critical
+for protecting one of humanities greatest resources.
+
 \section{Approach}
+The film introduces an interesting docking problem, where a human pilot and a robotic copilot perform an approach and mating maneuver. In this project, the human pilot Dr. Cooper is cut from the equation, and instead a fully autonomous neural net is created and tasked with the now automated rendezvous and docking problem (AR\&D). A full 6 degree of freedom numerical simulator is built in TUdatpy to recreate the problem posed in the scene, based on analysis by \cite{Girija2016} 's great paper on the rotational dynamics of the spindown maneuver. Then, several techniques from neuroevolution are applied to evolve neural networks capable of performing the docking maneuver. The most succesful approach was to use the NEAT algorithm \cite{stanley2002evolving} in combination with curriculum learning \cite{bengio2009curriculum}. While not being able to fully solve the problem within the scope of this project, the results are promising and show that this approach combined with a better curriculum could likely solve the problem, and possibly more complex problems with further work.
 % simulator + neural network + evolutionary algorithm
 % Tudat chosen as simulator (discretized time and space using numerical integration), as it is open-source and has alot of functionality for orbital mechanics
 % various neural nets, both fixed and variable topology
 % Various evolutionary algorithms: SGA, SEA and NEAT
-
 
 %  Introduction
 %    Why is this work relevant? may seem just funny (which it is), but has real applications: if you can dock with space debris, it becomes alot easier to deorbit, or possibly atleast stabilize/detumble. Interstellar provides a really nice scenario to work with, and alot of people are familiar with it.
