@@ -1,17 +1,120 @@
 \chapter{Genetic Algorithms and Neuroevolution}
 
-\section{Simple Genetic Algorithms}
-% Basic SGA explanation, selection, crossover, mutation
+\section{Neuroevolution}
 
-\section{Simple Evolutionary Algorithms}
-% SEA explanation, differences from SGA
+Neuroevolution is a technique that combines evolutionary algorithms with
+artificial neural networks to optimize the behavior of the neural network.
+Unlike traditional gradient-based training methods such as backpropagation,
+neuroevolution uses population-based search to explore the design space without
+requiring differentiable objective functions, or even a dataset of inputs and
+outputs. It does require a fitness criterion which is used to evaluate the
+performance of the network. An important distinction in neuroevolution
+algorithms is, if either only the weights and biases are varied, or if the network
+topology is also varied. The second class are refered to as TWEANNs (Topology
+and Weight Evolving Artificial Neural Network algorithms).
+
+\section{Simple Genetic Algorithms}
+Simple Genetic Algorithms (SGAs) are some of the most fundamental approaches in
+evolutionary computation. Popularized by \textcite{holland1992adaptation} in
+his book on adaptation in natural and artificial systems, SGA's are based on
+principles of natural selection and genetics, where populations of candidate
+solutions evolve over successive generations. By culling and reproducing based
+on selection pressure and genetic operators, the algorithm progresses to an
+optimum.
+
+A major benefit of SGA's is their ability to search high dimensional solution
+spaces while maintaining solution diversity, and so reducing the risk of
+prematurely converging to a local optimum. This is done by keeping a population
+of candidate solutions, and applying either crossover or mutation operations to
+(pairs of) individuals.
+
+\subsection{Fundamental Components}
+
+The SGA in this project uses four mechanisms to mimic the biological process of
+evolution:
+
+\textbf{Population Initialization:} The algorithm begins with a randomly generated population of candidate solutions in the form of lists of numbers, where each single list is called a chromosome. Each chromosome represents a potential solution to the optimization problem, with individual numbers or genes corresponding to decision variables. The behavior that results is then refered to as a phenotype. This scheme is called 'direct' encoding. Indirect schemes exist in an attempt to reduce the size of the chromosome or to allow different genetic operators. The implementation in \textcite{Biscani2020} uses a direct scheme, where each gene is a floating point number.
+
+\textbf{Selection:} Selection mechanisms determine which individuals from the current population will contribute to the next generation. In \textcite{Biscani2020}, two selection methods are available: truncated and tournament.
+\begin{itemize}
+    \item \textbf{Truncated selection} works by selecting the best $n$ number of chromosomes in the entire population.
+    \item \textbf{Tournament Selection:}  works by selecting each offspring as the one having the optimal fitness in a random group of a given size.
+\end{itemize}
+
+\textbf{Crossover:} The crossover operator combines genes from two parent chromosomes to produce offspring. While more methods are available, this project only uses the "exponential" method. It selects a random point in the parent chromosome and inserts, in each successive gene, the partner values with a set probability \parencite{Biscani2020}.
+
+\textbf{Mutation:} Mutation introduces random changes to individual chromosomes, typically by flipping bits with a low probability. This operator improves diversity within the population and provides a mechanism for exploring new regions of the search space that might not be reachable through crossover.
+
+\subsection{Algorithm Structure}
+
+The basic structure of a Simple Genetic Algorithm can be described by:
+
+\begin{algorithm}
+    \caption{Simple Genetic Algorithm}
+    \begin{algorithmic}[1]
+        \Require Population size $N$, Crossover rate $P_c$, Mutation rate $P_m$, Maximum generations $G_{max}$
+        \Ensure Best solution found
+        \State Initialize population $P(0)$ with $N$ random chromosomes
+        \State Evaluate fitness $f(x)$ for each chromosome $x$ in $P(0)$
+        \State $generation \gets 0$
+        \While{$generation < G_{max}$}
+        \State $P'(generation) \gets \emptyset$ \Comment{New population}
+        \While{$|P'(generation)| < N$}
+        \State $parent_1 \gets \Call{Select}{P(generation)}$
+        \State $parent_2 \gets \Call{Select}{P(generation)}$
+        \If{$\Call{random}{} < P_c$}
+        \State $(offspring_1, offspring_2) \gets \Call{Crossover}{parent_1, parent_2}$
+        \Else
+        \State $offspring_1 \gets parent_1$
+        \State $offspring_2 \gets parent_2$
+        \EndIf
+        \State $offspring_1 \gets \Call{Mutate}{offspring_1, P_m}$
+        \State $offspring_2 \gets \Call{Mutate}{offspring_2, P_m}$
+        \State Add $offspring_1$ and $offspring_2$ to $P'(generation)$
+        \EndWhile
+        \State $P(generation+1) \gets P'(generation)$
+        \State Evaluate fitness for all chromosomes in $P(generation+1)$
+        \State $generation \gets generation + 1$
+        \EndWhile
+        \State \Return Best chromosome from final population
+    \end{algorithmic}
+\end{algorithm}
 
 \section{Island Model and Migration}
-% Explain island model concept, migration strategies, population diversity
+% REWRITE
+An Island Model is a parallel evolution approach where multiple independent populations (islands) evolve simultaneously, with occasional migration of individuals between islands. A collection of these interacting islands is called an archipelago. Using an archipelago creates a greater genetic diversity, which often results in improved algorithm performance. By avoiding premature convergence to local optima, the runtime and final fitness of the champion agent can be improved. Whether or not this method is beneficial to the performance is problem dependent however, and requires some experimentation \parencite{whitley1999island}. 
+
+\subsection{Migration Mechanisms}
+\textbf{Archipelago Topology:} Defines how islands are connected and which islands can exchange individuals. Available topologies are ring, fully connected, and random graphs. The choice of topology can impact course of evolution and the overall performance of the algorithm.
+
+\textbf{Migration Rate:} Determines how frequently migration occurs, expressed as the number of generations between migration events. A balance is struck between allowing islands to develop distinct solutions while preventing them from becoming too isolated \cite{whitley1999island}.
+
+\textbf{Selection Policy:} Determines which individuals are selected for migration. In this project, elitist migration is used, where the best $n$ individuals are selected to migrate.
+
+\textbf{Replacement Policy:} Defines how incoming migrants are integrated into the destination population. In this project, the worst $n$ individuals are replaced by the incoming migrants.
 
 \section{Neuroevolution of Augmenting Topologies (NEAT)}
-% Detailed NEAT explanation, speciation, complexification
-% Why it's better suited for topology evolution problems
+
+Neuroevolution of Augmenting Topologies (NEAT) is a TWEANN algorithm developed by \textcite{stanley2002evolving} that addresses key limitations of traditional neuroevolution approaches. Unlike conventional methods that evolve fixed-topology networks or randomly initialize topologies, NEAT starts with a minimal network structure and gradually complexifies them through evolution. 
+
+\subsection{Mechanisms}
+
+\textbf{Complexification:} A NEAT population begins with simple networks containing only input and output nodes. The connections can be initialized as completely empty, fully connected like a perceptron, or having random connections between inputs and outputs. The starting dimensionality is thus low. Structural mutations add nodes and connections incrementally, allowing the search space dimensionality to increase gradually. In this way initial search complexity is minimized while allowing evolution toward more complicated topologies. This removes the necessity of choosing a network topology which often requires experimentation, which would rarely if ever, give the optimal topology.
+
+\textbf{Historical Markings:} Each structural innovation receives a unique innovation number that persists throughout evolution. These markings enable homologous crossover, where connections with matching innovation numbers can be properly aligned during synapsis, regardless of network topology differences.
+
+\textbf{Speciation:} Networks are grouped into species based on topological and weight similarities using a genetic distance measure. Each species evolves independently, protecting innovative structures from having to compete with established solutions. Only the most successful species reproduce and contribute to the next generation.
+
+\textbf{Genetic Operators:} NEAT employs both structural and parametric mutations. Structural mutations add nodes by splitting existing connections or add new connections between unconnected nodes. Weight mutations adjust connection strengths using Gaussian perturbation. Crossover operations combine networks from the same species while preserving structural innovations through historical markings.
+
+This approach makes NEAT particularly suited for problems where the optimal network topology is unknown, as it can discover both the appropriate architecture and weights simultaneously through evolutionary search.
 
 \section{Curriculum Learning in Neuroevolution}
-% Explain curriculum learning concept and why it's beneficial for complex problems
+
+Curriculum learning is a training strategy where learning tasks are presented in a structured sequence from simple to complex, mimicking how humans and animals naturally learn \cite{bengio2009curriculum}. In neuroevolution, this approach can significantly improve convergence rates and final performance by gradually increasing problem difficulty as the population evolves.
+
+The core principle is that networks first master simpler subtasks before tackling the full problem complexity. This prevents premature convergence to poor local optima that often occur when agents are immediately exposed to the complete task \cite{elman1993learning}. By establishing foundational behaviors on easier variants, the population develops building blocks that can be refined and combined for more complex scenarios.
+
+This approach is particularly valuable for complex control problems that can be atomized into simpler components. For example, teaching calculus to a child follows a natural curriculum: first arithmetic operations, then algebra and functions, followed by limits and derivatives, and finally integration and advanced applications. Each stage builds upon the previous competencies, allowing the learner to develop robust understanding that generalizes effectively to the full subject complexity.
+
+
