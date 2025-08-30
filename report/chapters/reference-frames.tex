@@ -1,7 +1,53 @@
 \chapter{Reference Frames}
-\section{Inertial Reference Frame}
+\label{chap:reference-frames}
+\section{Inertial Cartesian Frame}
 
-\section{Corotating Chaser-fixed Reference Frame}
+The inertial reference frame is defined in the Newtonian sense as a non-accelerating, non-rotating frame. In this frame, Newton's first law of motion holds true: objects not subject to external forces remain at rest or move with constant velocity. The inertial frame is denoted by the subscript $I$, such that position vectors, velocities, and accelerations in this frame are written as $\mathbf{r}_I$, $\mathbf{v}_I$, and $\mathbf{a}_I$ respectively. \textbf{\textit{Note that if no subscript is used, the inertial frame is implied.}}
 
-\section{Corotating Target-fixed Reference Frame}
+The inertial coordinate system employed is Cartesian in nature, with three orthogonal axes forming a right-handed coordinate system. The origin of this frame is positioned at the center body of the simulation, or the solar system barycenter (SSB) if there is no central body. The frame is oriented towards the ECLIPJ2000 reference. This choice provides a reference frame which is easily visualized and can be used to create comparable simulations, even if the environment differs.
+
+We define:
+\begin{equation}
+    \mathbf{r} = x \mathbf{e_x} * y \mathbf{e_y} + z \mathbf{e_z} = \begin{bmatrix} x \\ y \\ z \end{bmatrix}
+\end{equation}
+The base vectors $\mathbf{e_x}$, $\mathbf{e_y}$ and $\mathbf{e_z}$ are time invarient and orthogonal to each other, such that:
+\begin{equation}
+    \mathbf{e_x} \cdot \mathbf{e_y} = \mathbf{e_y} \cdot \mathbf{e_z} = \mathbf{e_z} \cdot \mathbf{e_x} = 0
+\end{equation}
+\begin{equation}
+    \frac{d \mathbf{e_x}}{dt} = \frac{d \mathbf{e_y}}{dt} = \frac{d \mathbf{e_z}}{dt} = 0
+\end{equation}
+The velocity and acceleration in this frame are then given by:
+\begin{equation}
+    \mathbf{v} = \frac{d\mathbf{r}}{dt} = \frac{dx}{dt} \mathbf{e_x} + \frac{dy}{dt} \mathbf{e_y} + \frac{dz}{dt} \mathbf{e_z} = \begin{bmatrix} \dot{x} \\ \dot{y} \\ \dot{z} \end{bmatrix}
+\end{equation}
+\begin{equation}
+    \mathbf{a} = \frac{d\mathbf{v}}{dt} = \frac{d^2x}{dt^2} \mathbf{e_x} + \frac{d^2y}{dt^2} \mathbf{e_y} + \frac{d^2z}{dt^2} \mathbf{e_z} = \begin{bmatrix} \ddot{x} \\ \ddot{y} \\ \ddot{z} \end{bmatrix}
+\end{equation}
+
+\section{Inertial Chaser-fixed Reference Frame}
+
+The inertial chaser-fixed reference frame maintains the inertial properties of the previously described frame while translating the origin to the center of mass (CoM) of the chaser spacecraft (Lander 2). This frame is denoted by the subscript $C$, such that position vectors, velocities, and accelerations are written as $\mathbf{r}_C$, $\mathbf{v}_C$, and $\mathbf{a}_C$ respectively.
+
+Note this frame is inertial, meaning the coordinate axes do not rotate with the chaser spacecraft but maintain their fixed orientation in inertial space. The frame simply translates with the chaser's center of mass for analyzing the relative motion between the chaser and target spacecraft. In this frame, the chaser spacecraft's position is always at the origin, while the target spacecraft's position vector $\mathbf{r}_{target,C}$ represents the relative position vector from chaser to target. Velocity and acceleration vectors inherit their definition from the inertial frame, as the frame is non-rotating.
+
+The transformation between the inertial frame and the inertial chaser-fixed frame is purely translational:
+\begin{equation}
+    \mathbf{r}_C = \mathbf{r}_I - \mathbf{r}_{chaser,I}
+\end{equation}
+where $\mathbf{r}_{chaser,I}$ is the position of the chaser's center of mass in the inertial frame.
+
+\section{Chaser Frame}
+
+The chaser frame is a body-fixed coordinate system attached to Lander 2, rotating with the spacecraft as it maneuvers. This frame is denoted by the subscript $B$, such that position vectors are written as $\mathbf{r}_B$. The origin of this frame is located at the center of mass of the chaser spacecraft, with the coordinate axes aligned with the spacecraft's principal body axes.
+
+Unlike the previous inertial frames, the chaser frame rotates with the spacecraft, meaning the base vectors $\mathbf{e}_{x,B}$, $\mathbf{e}_{y,B}$, and $\mathbf{e}_{z,B}$ are time-variant when viewed from an inertial reference frame. This body-fixed frame provides a natural coordinate system for expressing thruster orientation and control inputs.
+
+The transformation between the inertial chaser-fixed frame and the body-fixed chaser frame involves a rotation matrix $\mathbf{R}_{CB}$:
+\begin{equation}
+    \mathbf{r}_B = \mathbf{R}_{CB} \mathbf{r}_C
+\end{equation}
+where $\mathbf{R}_{CB}$ represents the orientation of the spacecraft body frame relative to the inertial chaser-fixed frame.
+
+This report does not use velocity or acceleration vectors in the body frame, the complexities associated with fictitious forces (centrifugal and Coriolis effects) that arise in rotating reference frames are not addressed.
 
