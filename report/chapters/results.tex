@@ -1,18 +1,54 @@
 \chapter{Results}
 
-\section{SGA Performance}
-% straight line problem solved, got stuck on diagonal problem. show it stops converging;
-% argue that it might eventually solve it, but would take too long, and is not guaranteed.
+\section{Algorithm Performance Progression}
 
-\section{NEAT Performance}
-% show that NEAT could solve the diagonal problem, but not the full problem
-% show that the solution does not first aim and then directly home the target, but rather combines rotation and translation from the start
-% show the weak solution where it can only hit a rotating target if it is close and rotating slowly
+\subsection{Simple Genetic Algorithm Results}
 
-% explain that if the homing behavior is improved, it could likely solve the full problem
-% do this by analysing the neural net topology, and showing that it does not have a clear structure, and that it likely has not learned the homing behavior well enough
+SGA successfully solved the basic straight-line translation problem, achieving consistent docking within the 25-meter approach distance. Learning curves demonstrated steady fitness improvement over generations, with networks converging to reliable translation and stopping behaviors.
 
+However, SGA failed to solve the diagonal movement problem despite extended training periods. Fitness evolution showed initial improvement followed by premature convergence, with final trajectories demonstrating single-axis solutions rather than coordinated multi-axis control. While extended training might eventually yield solutions, the convergence rate suggested prohibitive computational requirements.
 
-\section{Solution Validation}
-% show the diagonal champion network solving variations of the problem, add statistics
+% Figure suggestion: Learning curves comparing basic vs diagonal problem performance
+% Figure suggestion: Final trajectory comparison showing single-axis, desired diagonal paths and real diagonal paths BY SGA
+
+\subsection{Island Model Improvements}
+
+The island model variant improved SGA convergence speed on the basic problem through enhanced diversity maintenance. Migration frequency experiments revealed trade-offs between rapid convergence and final solution quality, with infrequent migration yielding superior average fitness through better diversity preservation.
+
+Despite these improvements, the island model also failed on the diagonal problem, indicating that diversity maintenance alone was insufficient to overcome the sparse reward structure and local optima challenges.
+
+% Figure suggestion: Migration frequency sensitivity analysis results
+% Figure suggestion: Population diversity metrics over generations
+
+\section{NEAT Performance and Breakthrough}
+
+\subsection{Diagonal Problem Success}
+
+NEAT achieved breakthrough performance on the diagonal movement problem after implementing the LQR-based cost function with shaping rewards. Networks demonstrated coordinated multi-axis control, successfully navigating from origin (0,0) to target (10,10) while maintaining docking constraints.
+
+Trajectory analysis revealed that successful networks did not employ the expected aim-then-translate strategy. Instead, they developed integrated rotation-translation behaviors from mission start, suggesting emergent rather than decomposed control strategies.
+
+% Figure suggestion: Multiple successful NEAT trajectories overlaid on single plot
+% Figure suggestion: Control input time series showing coordinated thruster activation
+
+\subsection{Rotating Target Limitations}
+
+NEAT failed to solve the full rotating target problem within computational constraints. However, partial success was achieved on simplified scenarios with reduced target distance (3 meters) and angular velocity. These solutions demonstrated the algorithm's capability to learn rotational matching behaviors under favorable conditions.
+
+Networks trained on the simplified rotating problem showed curriculum learning benefits, successfully transferring skills from diagonal → aiming → simplified rotating progression stages.
+
+% Figure suggestion: Comparison of failed vs successful rotating target attempts
+% Figure suggestion: Curriculum learning progression trajectories
+
+\section{Network Architecture Analysis}
+
+\subsection{Topology Examination}
+
+Analysis of successful network topologies revealed no obvious logical structure or interpretable control architecture. The evolved networks exhibited complex, seemingly random connectivity patterns rather than expected modular designs for translation and rotation control.
+
+This architectural opacity suggests that NEAT evolved black-box solutions rather than learning explicit behavioral decomposition. The lack of clear structure likely contributed to difficulties in scaling to more complex scenarios.
+
+% Figure suggestion: Network topology diagrams of best-performing solutions
+% Figure suggestion: Activation pattern analysis during different maneuver phases
+
 

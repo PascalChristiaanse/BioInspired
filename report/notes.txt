@@ -3,7 +3,9 @@ Todo:
 - add thruster diagram/table
 - add sga sensitivity analysis run table and fitness progression graphs
 - show improved learning rate with better cost function
-- 
+- add symbols section
+- move algorithm pseudo code to appendix, also add one explaining NEAT
+
 
 
 \section{Goal}
